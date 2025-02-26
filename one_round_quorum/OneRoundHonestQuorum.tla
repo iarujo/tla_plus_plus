@@ -26,7 +26,7 @@ Init == /\ votes = [a \in Acceptor |-> {}]
 castVote(a, v) == /\ ~hasVoted(a)
                   /\ votes' = [votes EXCEPT ![a] = @ \cup {v}]
 
-\* If there is a majority, 
+\* For now, we stop once everyone has voted
 Next  == /\ ~allHaveVoted
          /\ \E a \in Acceptor: \E v \in Values: castVote(a, v)
 
