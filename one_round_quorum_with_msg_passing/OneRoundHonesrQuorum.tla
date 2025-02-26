@@ -1,10 +1,10 @@
 ------------------------ MODULE OneRoundHonestQuorum ------------------------
-CONSTANTS Values, Acceptor, Quorum
------------------------------------------------------------------------------
-ASSUME QuorumAssumption == /\ \A Q \in Quorum : Q \subseteq Acceptor
-                           /\ \A Q1, Q2 \in Quorum : Q1 \cap Q2 # {}
 
-THEOREM QuorumNonEmpty == \A Q \in Quorum : Q # {}
+EXTENDS Integers, FiniteSets
+
+CONSTANTS Values, Acceptor, Quorum
+
+ASSUME QuorumAssumption == Quorum <= Cardinality(Acceptor) /\ Quorum > 0
 
 (***************************************************************************)
 (* Set of all possible messages                                            *)
@@ -21,13 +21,12 @@ TypeOK == /\ votes \in [Acceptor -> [Acceptor -> SUBSET (Values)]]
 
 -----------------------------------------------------------------------------
 
-decided(a) == {v \in Values : \E Q \in Quorum: \A acc \in Q: v \in votes[a][acc]}
+decided(a) == {v \in Values : \E Q \in SUBSET Acceptor : 
+               /\ Cardinality(Q) >= Quorum
+               /\ \A acc \in Q: v \in votes[a][acc]}
 
 \* Check if Acceptor a has already received a vote from Acceptor b
 hasVoted(a, b) == \E v \in Values: v \in votes[a][b]
-
-\* All acceptors have already cast a vote into the network
-allHaveVoted == \A a \in Acceptor: hasVoted(a, a)
 
 -----------------------------------------------------------------------------
 \* TODO: write invariants and properties
@@ -53,8 +52,7 @@ castVote(a, v) == /\ ~hasVoted(a, a)
                   /\ Send([type |-> "vote", acc |-> a, val |-> v])
 
 \* For now, stop once everyone has cast a vote
-Next  == \/ /\ ~allHaveVoted
-            /\ \E a \in Acceptor: \E v \in Values: castVote(a, v)
+Next  == \/ \E a \in Acceptor: \E v \in Values: castVote(a, v)
          \/ \E a \in Acceptor: Receive(a)
 
 Spec == Init /\ [][Next]_<<votes, network>>
@@ -63,5 +61,5 @@ Inv == TypeOK
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Feb 26 13:03:27 CET 2025 by inesaraujocanas
+\* Last modified Wed Feb 26 13:49:46 CET 2025 by inesaraujocanas
 \* Created Wed Feb 26 09:30:30 CET 2025 by inesaraujocanas
