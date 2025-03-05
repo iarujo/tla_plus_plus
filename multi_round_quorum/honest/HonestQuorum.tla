@@ -41,7 +41,7 @@ EnoughVotes(v, e) == Cardinality({a \in Acceptor : [type |-> "vote", acc |-> a, 
 
 AllDecided(v, e) == \A a \in Acceptor: [value |-> v, epoch |-> e] \in decided[a]
 
-Termination == \A v \in Values, e \in Epoch: EnoughVotes(v, e) => <>[] AllDecided(v, e)
+Termination == [] (\E v \in Values, e \in Epoch: EnoughVotes(v, e) => <>[] AllDecided(v, e))
 
 -----------------------------------------------------------------------------
 
@@ -52,17 +52,22 @@ Init == /\ network = {}
 Send(m) == network' = network \cup {m}
 
 \* Decide only if you haven't previously decided a value for epoch e
-Decide(a) == \/ \E e \in Epoch: \E v \in QuorumAgreedValues(e): \A ve \in decided[a]: ve # [value |-> v, epoch |-> e] /\ decided' = [decided EXCEPT ![a] = @ \cup {[value |-> v, epoch |-> e]}]
-             \/ decided' = decided
+Decide(a) == /\ \E e \in Epoch: \E v \in QuorumAgreedValues(e): \A ve \in decided[a]: ve # [value |-> v, epoch |-> e] /\ decided' = [decided EXCEPT ![a] = @ \cup {[value |-> v, epoch |-> e]}]
+             /\ UNCHANGED network
 
 CastVote(a, v, e) == /\ ~hasVoted(a, e)
-                  /\ Send([type |-> "vote", acc |-> a, val |-> v, epoch |-> e])
+                     /\ Send([type |-> "vote", acc |-> a, val |-> v, epoch |-> e])
+                     /\ UNCHANGED decided
+                     
 
-Next  == /\ \E a \in Acceptor, v \in Values, e \in Epoch: CastVote(a, v, e)
-         /\ \E a \in Acceptor: Decide(a)
+Next  == \/ \E a \in Acceptor, v \in Values, e \in Epoch: CastVote(a, v, e)
+         \/ \E a \in Acceptor: Decide(a)
 
-Spec == Init /\ [][Next]_<<network, decided>> /\ Termination
+Spec == Init /\ [][Next]_<<network, decided>> /\ WF_<<network, decided>>(Next)
 
 Inv == TypeOK /\ Agreement
 
 =============================================================================
+\* Modification History
+\* Last modified Wed Mar 05 11:37:09 CET 2025 by inesaraujocanas
+\* Created Sat Mar 01 20:20:36 CET 2025 by inesaraujocanas

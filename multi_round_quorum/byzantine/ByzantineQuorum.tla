@@ -43,7 +43,7 @@ EnoughVotes(v, e) == Cardinality({a \in acceptors : [type |-> "vote", acc |-> a,
 
 AllDecided(v, e) == \A a \in acceptors: [value |-> v, epoch |-> e] \in decided[a]
 
-Termination == \A v \in Values, e \in Epoch: EnoughVotes(v, e) => <>[] AllDecided(v, e)
+Termination == [] (\E v \in Values, e \in Epoch: EnoughVotes(v, e) => <>[] AllDecided(v, e))
 
 -----------------------------------------------------------------------------
 
@@ -54,27 +54,33 @@ Init == /\ network = {}
 Send(m) == network' = network \cup {m}
 
 \* Decide only if you haven't previously decided a value for epoch e
-Decide(a) == \/ \E e \in Epoch: \E v \in QuorumAgreedValues(e): 
-                    \A ve \in decided[a]: 
-                        /\ ve # [value |-> v, epoch |-> e] 
+NotDecided(a, e) == \A v \in Values, ve \in decided[a]: ve # [value |-> v, epoch |-> e] 
+
+Decide(a) == /\ \E e \in Epoch: \E v \in QuorumAgreedValues(e): 
+                        /\ NotDecided(a, e)
                         /\ decided' = [decided EXCEPT ![a] = @ \cup {[value |-> v, epoch |-> e]}]
-             \/ decided' = decided
+             /\ UNCHANGED network
 
 CastVote(a, v, e) == /\ ~hasVoted(a, e)
                      /\ Send([type |-> "vote", acc |-> a, val |-> v, epoch |-> e])
+                     /\ UNCHANGED decided
             
 \* A Byzantine node can send any type of message whenever it wants. 
 \* It can also vote for as many values as it wants. Voting for different values at the same epoch essentially means
 \* that Acceptors can store different values for b's vote      
-CastVoteByzantine(a, v, e) == Send([type |-> "vote", acc |-> a, val |-> v, epoch |-> e])
+CastVoteByzantine(a, v, e) == /\ Send([type |-> "vote", acc |-> a, val |-> v, epoch |-> e])
+                              /\ UNCHANGED decided
 
-Next  == /\(\/ \E a \in Acceptor, v \in Values, e \in Epoch: CastVote(a, v, e)
-            \/ \E a \in ByzantineAcceptor, v \in Values, e \in Epoch: CastVoteByzantine(a, v, e))
-         /\ \E a \in Acceptor: Decide(a)
+Next  == \/ \E a \in Acceptor, v \in Values, e \in Epoch: CastVote(a, v, e)
+         \/ \E a \in ByzantineAcceptor, v \in Values, e \in Epoch: CastVoteByzantine(a, v, e)
+         \/ \E a \in Acceptor: Decide(a)
 
-Spec == Init /\ [][Next]_<<network, decided>> /\ Termination
+Spec == Init /\ [][Next]_<<network, decided>> /\ WF_<<network, decided>>(Next)
 
-Inv == TypeOK \*/\ Agreement
+Inv == TypeOK \*/\ Agreement     
 
 
 =============================================================================
+\* Modification History
+\* Last modified Wed Mar 05 13:19:38 CET 2025 by inesaraujocanas
+\* Created Sun Mar 02 01:19:06 CET 2025 by inesaraujocanas

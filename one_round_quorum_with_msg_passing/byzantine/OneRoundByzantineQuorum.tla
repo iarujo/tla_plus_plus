@@ -42,7 +42,7 @@ EnoughVotes(v) == Cardinality({a \in acceptors : [type |-> "vote", acc |-> a, va
 
 AllDecided(v) == \A a \in acceptors: decided[a] = v
 
-Termination == \A v \in Values: EnoughVotes(v) => <>[] AllDecided(v) \* Never violated. Is there maybe an issue here?
+Termination == [] (\E v \in Values: EnoughVotes(v) => <>[] AllDecided(v))
 
 -----------------------------------------------------------------------------
 
@@ -52,25 +52,29 @@ Init == /\ network = {}
 
 Send(m) == network' = network \cup {m}
 
-Decide(a) == \/ /\ decided[a] = -1 
-                /\ \E v \in QuorumAgreedValues: decided' = [decided EXCEPT ![a] = v]
-             \/ decided' = decided
-
-\* Acceptor a votes for value v, provided it hasn't already voted
+             
+Decide(a) == /\ \E v \in QuorumAgreedValues: decided' = [decided EXCEPT ![a] = v]
+             /\ UNCHANGED network
+             
+            
 CastVote(a, v) == /\ ~hasVoted(a)
                   /\ Send([type |-> "vote", acc |-> a, val |-> v])
+                  /\ UNCHANGED decided
                   
-\* A Byzantine node can send any type of message whenever it wants. 
-\* It can also vote for as many values as it wants. Voting for different values at the same time essentially means
-\* that Acceptors can store different values for b's vote
-CastVoteByzantine(b, v) == Send([type |-> "vote", acc |-> b, val |-> v])                  
+CastVoteByzantine(b, v) == /\ Send([type |-> "vote", acc |-> b, val |-> v])    
+                           /\ UNCHANGED decided              
 
-Next  == /\(\/ \E a \in Acceptor: \E v \in Values: CastVote(a, v)
-            \/ \E b \in ByzantineAcceptor: \E v \in Values: CastVoteByzantine(b, v))
-         /\ \E a \in acceptors: Decide(a)
+Next  == \/ \E a \in Acceptor: \E v \in Values: CastVote(a, v)
+         \/ \E b \in ByzantineAcceptor: \E v \in Values: CastVoteByzantine(b, v)
+         \/ \E a \in acceptors: Decide(a)
 
-Spec == Init /\ [][Next]_<<network, decided>> /\ Termination
+Spec == Init /\ [][Next]_<<network, decided>> /\ WF_<<network, decided>>(Next)
+
+
 
 Inv == TypeOK /\ Agreement
 
 =============================================================================
+\* Modification History
+\* Last modified Wed Mar 05 11:30:27 CET 2025 by inesaraujocanas
+\* Created Wed Feb 26 09:30:30 CET 2025 by inesaraujocanas

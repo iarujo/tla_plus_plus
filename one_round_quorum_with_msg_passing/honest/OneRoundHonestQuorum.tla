@@ -39,7 +39,9 @@ EnoughVotes(v) == Cardinality({a \in Acceptor : [type |-> "vote", acc |-> a, val
 
 AllDecided(v) == \A a \in Acceptor: decided[a] = v
 
-Termination == \A v \in Values: EnoughVotes(v) => <>[] AllDecided(v)
+Termination == [] (\E v \in Values: EnoughVotes(v) => <>[] AllDecided(v))
+
+\* Ev == [] (\A v \in Values: EnoughVotes(v) = FALSE)
 
 -----------------------------------------------------------------------------
 
@@ -49,18 +51,23 @@ Init == /\ network = {}
 
 Send(m) == network' = network \cup {m}
 
-Decide(a) == \/ \E v \in QuorumAgreedValues: decided' = [decided EXCEPT ![a] = v]
-             \/ decided' = decided
+Decide(a) == /\ \E v \in QuorumAgreedValues: decided' = [decided EXCEPT ![a] = v]
+             /\ UNCHANGED network
+      
 
 CastVote(a, v) == /\ ~hasVoted(a)
                   /\ Send([type |-> "vote", acc |-> a, val |-> v])
+                  /\ UNCHANGED decided
 
 \* For now, stop once everyone has cast a vote
-Next  == /\ \E a \in Acceptor: \E v \in Values: CastVote(a, v)
-         /\ \E a \in Acceptor: Decide(a)
+Next  == \/ \E a \in Acceptor: \E v \in Values: CastVote(a, v)
+         \/ \E a \in Acceptor: Decide(a)
 
-Spec == Init /\ [][Next]_<<network, decided>> /\ Termination
+Spec == Init /\ [][Next]_<<network, decided>> /\ WF_<<network, decided>>(Next)
 
 Inv == TypeOK /\ Agreement
 
 =============================================================================
+\* Modification History
+\* Last modified Wed Mar 05 11:21:31 CET 2025 by inesaraujocanas
+\* Created Wed Feb 26 09:30:30 CET 2025 by inesaraujocanas
