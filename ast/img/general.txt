@@ -1,0 +1,21 @@
+@startuml
+class Spec
+class Variables
+class Constants
+class Definition
+class String
+class Clause
+class Alias
+class Predicate
+class Term
+Spec --> Variables
+Spec --> Constants
+Spec "1" --> "many" Definition
+Variables "1" --> "many" Variable
+Constants "1" --> "many" Constant
+Definition --> String
+Definition --> Clause
+Clause --> Predicate
+Predicate ..> Term
+Predicate ..> Alias
+@enduml
