@@ -1,6 +1,8 @@
 from term_abstract import AbstractTerm
 from predicates import Equals, NotEquals, LessThan, LessThanEquals, GreaterThan, GreaterThanEquals
-from typing import List
+from typing import List, Optional
+
+# TODO: Add subclasses in different files for simple terms, arithmetic operations, set operations, etc.
 
 class Term:
 
@@ -35,16 +37,16 @@ class Term:
         return LessThan(self, value)
     
     
-    def __le__(self, value):
-        return LessThanEquals(self, value)
+    def __ge__(self, value):
+        return LessThanEquals(value, self)
     
     
     def __gt__(self, value):
         return GreaterThan(self, value)
 
     
-    def __ge__(self, value):
-        return GreaterThanEquals(self, value)
+    def __le__(self, value):
+        return GreaterThanEquals(value, self)
 
 
 class Scalar(Term):
@@ -94,6 +96,29 @@ class Constant(Term):
     def __repr__(self):
         return f"{self.name}"
     
+
+class Alias(Term):
+    """Term representing an alias for a definition that must be declared elsewhere in the AST."""
+    # Note: some aliases return boolean values, while others just return a value of any other kind. Should we make a distinction between these?
+
+    def __init__(
+            self,
+            name: str,
+            arguments: Optional[List[str]] = None):
+        
+        self.name = name
+        if arguments is None:
+            self.arguments = []
+        else:
+            self.arguments = arguments
+
+    def __repr__(self):
+        if(self.arguments):
+            return f"{self.name}({', '.join(repr(a) for a in self.arguments)})"
+        return f"{self.name}"
+    
+# TODO: The following classes need more refining in therms of what classes of elements they accept    
+    
 class Record(Term):
     """
     Term representing a record that's being defined, with syntax [val1 : type1, val2 : type2, ...]
@@ -128,6 +153,23 @@ class RecordInstance(Term):
     def __repr__(self):
         return f"[{', '.join([f'{v} |-> {repr(t)}' for v, t in zip(self.vals, self.types)])}]"
     
+class Mapping(Term): 
+    """
+    Term representing a TLA+ function (mapping) ]
+    """
+
+    def __init__(
+            self,
+            vals: List[str],
+            types: List[str]): # TODO: Records and Mappings still need a lot of work in terms of handling different input types
+        
+        super().__init__()
+        self.vals = vals
+        self.types = types
+
+    def __repr__(self):
+        return f"[{', '.join([f'{v} -> {t}' for v, t in zip(self.vals, self.types)])}]"
+    
     
 class Function(Term):
     """
@@ -136,6 +178,104 @@ class Function(Term):
     
     def __init__(self):
         pass
+    
+class Unchanged(Term):
+    """
+    Represents the unchanged operator in TLA+
+    """
+    
+    def __init__(
+            self,
+            var: Term):
+        
+        super().__init__()
+        self.var = var
+
+    def __repr__(self):
+        return f"UNCHANGED {repr(self.var)}"
+    
+class IndexSet(Function):
+    """
+    Represents the indexing operation of a set
+    """
+    
+    def __init__(
+            self,
+            set: Term,
+            index: Term):
+        
+        super().__init__()
+        self.set = set
+        self.index = index
+
+    def __repr__(self):
+        return f"{repr(self.set)}[{repr(self.index)}]"
+    
+class Subset(Function):
+    
+    def __init__(
+            self,
+            set: Term):
+        
+        super().__init__()
+        self.set = set
+
+    def __repr__(self):
+        return f"SUBSET {repr(self.set)}"
+    
+class Set(Function):
+    """ Represents the empty set """
+    
+    def __init__(self, elems: List[Term]):
+        super().__init__()
+        self.elems = elems
+    def __repr__(self):
+        return "{" + f"{', '.join(repr(e) for e in self.elems)}" + "}"
+    
+class SetOf(Function):
+    """ Operator to create a set of elements belonging to a certain subset that satisfy a certain predicate """
+    
+    def __init__(
+            self,
+            var: Alias,
+            set: Term,
+            predicate: Term):
+        
+        super().__init__()
+        self.var = var
+        self.set = set
+        self.predicate = predicate
+
+    def __repr__(self):
+        return f"{{ {repr(self.var)} \\in {repr(self.set)}: {repr(self.predicate)} }}"
+    
+class SetExcept(Function):
+    """ Operator to return a set with a certain entry changed. Syntax: [ set EXCEPT ![index] = value] """
+    def __init__(
+            self,
+            set: Term,
+            index: Term,
+            value: Term):
+        
+        super().__init__()
+        self.set = set
+        self.index = index
+        self.value = value
+        
+    def __repr__(self):
+        return f"[{repr(self.set)} EXCEPT ![{repr(self.index)}] = {repr(self.value)}]"
+    
+class Cardinality(Function):
+    
+    def __init__(
+            self,
+            set: Term):
+        
+        super().__init__()
+        self.set = set
+    
+    def __repr__(self):
+        return f"Cardinality({repr(self.set)})"
 
 
 class Union(Function):
@@ -151,7 +291,7 @@ class Union(Function):
 
     def __repr__(self):
         return (
-            f"{repr(self.a)} \\cup {repr(self.b)}"
+            f"({repr(self.a)} \\cup {repr(self.b)})"
         )
         
         
@@ -168,7 +308,7 @@ class Intersection(Function):
 
     def __repr__(self):
         return (
-            f"{repr(self.a)} \\cap {repr(self.b)}"
+            f"({repr(self.a)} \\cap {repr(self.b)})"
         )
         
 
@@ -222,7 +362,7 @@ class Multiplication(Function):
 
     def __repr__(self):
         return (
-            f"{repr(self.a)} * {repr(self.b)}"
+            f"({repr(self.a)} * {repr(self.b)})"
         )
         
 class Division(Function):
@@ -239,5 +379,5 @@ class Division(Function):
 
     def __repr__(self):
         return (
-            f"{repr(self.a)} \\div {repr(self.b)}"
+            f"({repr(self.a)} \\div {repr(self.b)})"
         )

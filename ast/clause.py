@@ -30,19 +30,19 @@ class Conjunction(Clause):
         self.literals = literals
         
     def __repr__(self):
-        return f"({' /\\ '.join(repr(l) for l in self.literals)})"    
+        return '(' + f"{' /\\ '.join(repr(l) for l in self.literals)})"    
     
 class Disjunction(Clause):
     
     """ A disjunction of literals """
     
     def __init__(self, literals: List[Union[Predicate, Clause]]):
-        self.literal = literals
+        self.literals = literals
         
     def __repr__(self):
-        return f"({[l.__repr__() for l in self.literals].join(' \\/ ')})"   
+        return ' (' + ' \\/ '.join(repr(l) for l in self.literals) + ')'
     
-
+    
 class Implication(Clause):
     
     """ An implication of two literals. Can also be written as ¬p ∨ q """
