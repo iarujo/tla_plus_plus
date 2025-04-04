@@ -1,6 +1,6 @@
 from typing import List, Optional, Union
-from clause import Clause
-from predicates import Predicate
+from src.definitions.clause.clause import Clause
+from src.definitions.predicates.predicates import Predicate
 
 class Definition():
     

@@ -1,5 +1,5 @@
 from typing import Union, List
-from term_abstract import AbstractTerm
+from src.definitions.terms.term_abstract import AbstractTerm
 
 class Predicate:
     """ 

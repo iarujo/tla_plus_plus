@@ -6,20 +6,20 @@ Note that the validity of the produced TLA+ depends on the correctness of the tr
 """
 
 from typing import List, Optional
-from definition import Definition
-from constants import Constants
-from assume import Assume
-from variables import Variables
+from src.definitions.definition import Definition
+from src.constants.constants import Constants
+from src.assume.assume import Assume
+from src.variables.variables import Variables
 
 class Spec:
     
     def __init__(self, module: str, extends: List[str], constants: Constants, assumptions: Optional[Assume], variables: Variables, defs: List[Definition]):
-        self.module = module
-        self.extends = extends
-        self.constants = constants
-        self.assumptions = assumptions
-        self.variables = variables
-        self.defs = defs
+        self.module = module # The name of the module
+        self.extends = extends # The modules this module extends
+        self.constants = constants # The constants of the module
+        self.assumptions = assumptions # The assumptions of the module
+        self.variables = variables # The variables of the module
+        self.defs = defs # The definitions of the module
         # TODO Add assumptions, theorems, and properties
     
     def __repr__(self):

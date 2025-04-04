@@ -1,6 +1,6 @@
 
 from typing import List
-from terms import Variable
+from src.definitions.terms.terms import Variable
 
 class Variables():
     """ A collection of the program's variables """
@@ -9,4 +9,4 @@ class Variables():
         self.variables = variables
 
     def __repr__(self):
-        return f"VARIABLE {', '.join(v.__repr__() for v in self.variables)}"
+        return f"VARIABLES {', '.join(v.__repr__() for v in self.variables)}"

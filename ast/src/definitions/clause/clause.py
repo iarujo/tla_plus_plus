@@ -5,7 +5,7 @@ Elements for the AST representation of clauses or logical formulas.
 """
 
 from typing import List, Union
-from predicates import Predicate
+from src.definitions.predicates.predicates import Predicate
 
 class Clause:
     """

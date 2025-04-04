@@ -1,0 +1,2 @@
+- Universal and existential quantifiers: implement \A a \in A, b \in B syntax
+- Improve records

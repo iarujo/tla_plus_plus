@@ -1,5 +1,5 @@
 from typing import List
-from terms import Term
+from src.definitions.terms.terms import Term
 
 class TemporalOperator():
     """

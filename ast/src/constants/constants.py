@@ -1,5 +1,5 @@
 from typing import List
-from terms import Constant
+from src.definitions.terms.terms import Constant
 
 class Constants:
     
