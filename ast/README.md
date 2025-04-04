@@ -1,6 +1,51 @@
 # TLA+ Abstract Syntax Tree (AST) Representation
 
+## Table of Contents
+- [TLA+ Abstract Syntax Tree (AST) Representation](#tla-abstract-syntax-tree-ast-representation)
+  - [Table of Contents](#table-of-contents)
+  - [Overview of the AST](#overview-of-the-ast)
+  - [Overview of the AST](#overview-of-the-ast-1)
+    - [Key Features](#key-features)
+  - [How the AST Works](#how-the-ast-works)
+    - [1. Specifications](#1-specifications)
+      - [`Spec` Class](#spec-class)
+        - [Example](#example)
+        - [Output Representation](#output-representation)
+    - [2. Constants and Variables](#2-constants-and-variables)
+      - [`Constants` Class](#constants-class)
+        - [Constructor](#constructor)
+        - [Example](#example-1)
+        - [Output Representation](#output-representation-1)
+      - [`Variables` Class](#variables-class)
+        - [Constructor](#constructor-1)
+        - [Example](#example-2)
+        - [Output Representation](#output-representation-2)
+    - [3. Definitions](#3-definitions)
+      - [`Definition` Class](#definition-class)
+      - [Example](#example-3)
+    - [4. Temporal Logic Operators](#4-temporal-logic-operators)
+      - [`Box` (`[]`)](#box-)
+      - [`Diamond` (`<>`)](#diamond-)
+      - [`FrameCondition` (`[A]_v`)](#framecondition-a_v)
+      - [`WeakFairness` (`WF_v(A)`)](#weakfairness-wf_va)
+    - [5. Predicates and Clauses](#5-predicates-and-clauses)
+      - [Predicates](#predicates)
+      - [Clauses](#clauses)
+    - [6. Terms](#6-terms)
+      - [Basic Term Types](#basic-term-types)
+      - [Arithmetic Operations](#arithmetic-operations)
+      - [Record and Mapping Operations](#record-and-mapping-operations)
+      - [Set Operations](#set-operations)
+  - [Getting Started](#getting-started)
+    - [Prerequisites](#prerequisites)
+    - [Installation](#installation)
+
+## Overview of the AST
+...
+
+
 This repository contains a Python implementation of an Abstract Syntax Tree (AST) designed to represent the syntax of TLA+ specifications. The AST provides a structured way to parse, analyze, and manipulate TLA+ specifications programmatically.
+
 
 ## Overview of the AST
 
