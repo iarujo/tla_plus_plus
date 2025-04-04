@@ -1,10 +1,12 @@
 # TLA+ Abstract Syntax Tree (AST) Representation
 
+This repository contains a Python implementation of an Abstract Syntax Tree (AST) designed to represent the syntax of TLA+ specifications. The AST provides a structured way to parse, analyze, and manipulate TLA+ specifications programmatically.
+
+
 ## Table of Contents
 - [TLA+ Abstract Syntax Tree (AST) Representation](#tla-abstract-syntax-tree-ast-representation)
   - [Table of Contents](#table-of-contents)
   - [Overview of the AST](#overview-of-the-ast)
-  - [Overview of the AST](#overview-of-the-ast-1)
     - [Key Features](#key-features)
   - [How the AST Works](#how-the-ast-works)
     - [1. Specifications](#1-specifications)
@@ -39,12 +41,6 @@
   - [Getting Started](#getting-started)
     - [Prerequisites](#prerequisites)
     - [Installation](#installation)
-
-## Overview of the AST
-...
-
-
-This repository contains a Python implementation of an Abstract Syntax Tree (AST) designed to represent the syntax of TLA+ specifications. The AST provides a structured way to parse, analyze, and manipulate TLA+ specifications programmatically.
 
 
 ## Overview of the AST
