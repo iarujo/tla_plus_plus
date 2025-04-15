@@ -47,6 +47,12 @@ class Term(AbstractTerm):
     
     def __le__(self, value):
         return GreaterThanEquals(value, self)
+    
+    def compile(self, spec):
+        """
+        Transforms the term into a valid TLA+ term.
+        """
+        raise NotImplementedError("This method should be implemented in subclasses.")
 
 
 class Scalar(Term):
@@ -64,6 +70,9 @@ class Scalar(Term):
     def __repr__(self):
         return f"{self.value}"
     
+    def compile(self, spec):
+        return self
+    
     
 class Variable(Term):
     """
@@ -79,6 +88,9 @@ class Variable(Term):
 
     def __repr__(self):
         return f"{self.name}"
+    
+    def compile(self, spec):
+        return self
     
     
 class Constant(Term):
@@ -96,6 +108,15 @@ class Constant(Term):
     def __repr__(self):
         return f"{self.name}"
     
+    def get_name(self):
+        """
+        Returns the name of the constant.
+        """
+        return self.name
+    
+    def compile(self, spec):
+        return self
+    
 class String(Term):
     """
     Term representing a string value.
@@ -110,6 +131,9 @@ class String(Term):
 
     def __repr__(self):
         return f'"{self.value}"'
+    
+    def compile(self, spec):
+        return self
 
 class Alias(Term):
     """Term representing an alias for a definition that must be declared elsewhere in the AST."""
@@ -130,6 +154,9 @@ class Alias(Term):
         if(self.arguments):
             return f"{self.name}({', '.join(repr(a) for a in self.arguments)})"
         return f"{self.name}"
+    
+    def compile(self, spec):
+        return self
     
 class Function(Term):
     """
@@ -154,6 +181,9 @@ class Unchanged(Term):
     def __repr__(self):
         return f"UNCHANGED {repr(self.var)}"
     
+    def compile(self, spec):
+        return Unchanged(self.var.compile(spec))
+    
 class Choose(Term):
     """
     Represents the choose operator in TLA+
@@ -173,6 +203,9 @@ class Choose(Term):
     def __repr__(self):
         return f"CHOOSE {repr(self.var)} \\in {repr(self.set)}: {repr(self.predicate)}"
     
+    def compile(self, spec):
+        return Choose(self.var.compile(spec), self.set.compile(spec), self.predicate.compile(spec))
+    
 class Enabled(Term):
     """
     Represents the enable operator in TLA+
@@ -187,6 +220,9 @@ class Enabled(Term):
 
     def __repr__(self):
         return f"ENABLED {repr(self.var)}"
+    
+    def compile(self, spec):
+        return Enabled(self.var.compile(spec))
     
 class Range(Term):
     """
@@ -205,6 +241,9 @@ class Range(Term):
     def __repr__(self):
         return f"{repr(self.start)}..{repr(self.end)}"
     
+    def compile(self, spec):
+        return Range(self.start.compile(spec), self.end.compile(spec))
+    
 """ Arithmetic operations """
 
 class BinaryArithmeticOp(Function):
@@ -217,6 +256,8 @@ class BinaryArithmeticOp(Function):
     def __repr__(self):
         return f"({repr(self.a)} {self.symbol} {repr(self.b)})"
 
+    def compile(self, spec):
+        return BinaryArithmeticOp(self.a.compile(spec), self.b.compile(spec), self.symbol)
 
 class Addition(BinaryArithmeticOp):
     """ Intermediate AST nodes representing addition """

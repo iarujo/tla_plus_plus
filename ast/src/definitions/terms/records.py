@@ -23,6 +23,12 @@ class Record(Term):
     def __repr__(self):
         return f"[{', '.join([f'{f} : {repr(t)}' for f, t in zip(self.fields, self.types)])}]"
     
+    def compile(self, spec):
+        """
+        Compile this record into a valid TLA+ record.
+        """
+        return Record(self.fields, [t.compile(spec) for t in self.types])
+    
 class RecordInstance(Term):
     """
     Term representing an instance of a record.
@@ -43,6 +49,12 @@ class RecordInstance(Term):
     def __repr__(self):
         return f"[{', '.join([f'{f} |-> {repr(v)}' for f, v in zip(self.fields, self.vals)])}]"
     
+    def compile(self, spec):
+        """
+        Compile this record instance into a valid TLA+ record instance.
+        """
+        return RecordInstance(self.fields, [v.compile(spec) for v in self.vals])
+    
 class Mapping(Term): 
     """
     Term representing a TLA+ function (mapping)
@@ -62,3 +74,9 @@ class Mapping(Term):
 
     def __repr__(self):
         return f"[{', '.join([f'{repr(v)} -> {repr(f)}' for v, f in zip(self.vals, self.funs)])}]"
+
+    def compile(self, spec):
+        """
+        Compile this mapping into a valid TLA+ mapping.
+        """
+        return Mapping([v.compile(spec) for v in self.vals], [f.compile(spec) for f in self.funs])

@@ -8,3 +8,10 @@ class AbstractTerm(ABC):
     @abstractmethod
     def __repr__(self):
         pass
+
+    @abstractmethod
+    def compile(self, spec):
+        """
+        Compile the term into a valid TLA+ expression.
+        """
+        pass

@@ -30,7 +30,15 @@ class Conjunction(Clause):
         self.literals = literals
         
     def __repr__(self):
-        return '(' + f"{' /\\ '.join(repr(l) for l in self.literals)})"    
+        return '(\n\t/\\ ' + f"{'\n\t/\\ '.join(repr(l) for l in self.literals)}\n\t)"    
+    
+    def compile(self, spec):
+        """
+        Compile this clause into a valid TLA+ specification.
+        """
+        return Conjunction(
+            [l.compile(spec) for l in self.literals]
+        )
     
 class Disjunction(Clause):
     
@@ -40,8 +48,15 @@ class Disjunction(Clause):
         self.literals = literals
         
     def __repr__(self):
-        return ' (' + ' \\/ '.join(repr(l) for l in self.literals) + ')'
+        return '(\n\t\\/ ' + '\n\t\\/ '.join(repr(l) for l in self.literals) + '\n\t)'
     
+    def compile(self, spec):
+        """
+        Compile this clause into a valid TLA+ specification.
+        """
+        return Disjunction(
+            [l.compile(spec) for l in self.literals]
+        )
     
 class Implication(Clause):
     
@@ -52,5 +67,14 @@ class Implication(Clause):
         self.q = q
         
     def __repr__(self):
-        return f"({self.p.__repr__()} => {self.q.__repr__()})"   
+        return f"({self.p.__repr__()} => {self.q.__repr__()})"  
+    
+    def compile(self, spec):
+        """
+        Compile this clause into a valid TLA+ specification.
+        """
+        return Implication(
+            self.p.compile(spec), 
+            self.q.compile(spec)
+        ) 
  

@@ -9,6 +9,12 @@ class TemporalOperator():
     def __init__(self):
         pass
     
+    def compile(self, spec):
+        """
+        Transforms the term into a valid TLA+ term.
+        """
+        raise NotImplementedError("This method should be implemented in subclasses.")
+    
 class Box(TemporalOperator):
     """
     The box operator []A, which means "A holds in all states of the system"
@@ -20,6 +26,9 @@ class Box(TemporalOperator):
     def __repr__(self):
         return f"[]{self.term}"
     
+    def compile(self, spec):
+        return Box(self.term.compile(spec))
+    
 class Diamond(TemporalOperator):
     """
     The diamond operator <>A, which means "A holds in some state of the system"
@@ -30,6 +39,9 @@ class Diamond(TemporalOperator):
         
     def __repr__(self):
         return f"<>{self.term}"
+    
+    def compile(self, spec):
+        return Diamond(self.term.compile(spec))
     
 class FrameCondition(TemporalOperator):
     """
@@ -43,6 +55,9 @@ class FrameCondition(TemporalOperator):
     def __repr__(self):
         return f"[{self.action}]_<<{', '.join(repr(v) for v in self.variables)}>>"
     
+    def compile(self, spec):
+        return FrameCondition(self.action.compile(spec), [v.compile(spec) for v in self.variables])
+    
 class WeakFairness(TemporalOperator):
     """
     Action with a Frame Condition on Primed Variables
@@ -54,3 +69,6 @@ class WeakFairness(TemporalOperator):
         
     def __repr__(self):
         return f"WF_<<{', '.join(repr(v) for v in self.variables)}>>({self.action})"
+    
+    def compile(self, spec):
+        return WeakFairness(self.action.compile(spec), [v.compile(spec) for v in self.variables])

@@ -21,6 +21,12 @@ class IndexSet(Function):
     def __repr__(self):
         return f"{repr(self.set)}[{repr(self.index)}]"
     
+    def compile(self, spec):
+        """
+        Compile the set operation into a valid TLA+ term.
+        """
+        return IndexSet(self.set.compile(spec), self.index.compile(spec))
+    
 class Subset(Function):
     """ Represents a subset of a set. 
         Syntax: SUBSET set
@@ -36,6 +42,12 @@ class Subset(Function):
     def __repr__(self):
         return f"SUBSET {repr(self.set)}"
     
+    def compile(self, spec):
+        """
+        Compile the subset operation into a valid TLA+ term.
+        """
+        return Subset(self.set.compile(spec))
+    
 class Set(Function):
     """ Represents a set of elements. 
         Syntax: { elem1, elem2, ... }
@@ -44,8 +56,15 @@ class Set(Function):
     def __init__(self, elems: List[Term]):
         super().__init__()
         self.elems = elems
+        
     def __repr__(self):
         return "{" + f"{', '.join(repr(e) for e in self.elems)}" + "}"
+    
+    def compile(self, spec):
+        """
+        Compile the set operation into a valid TLA+ term.
+        """
+        return Set([e.compile(spec) for e in self.elems])
     
 class SetOf(Function):
     """ Operator to create a set of elements belonging to a certain subset that satisfy a certain predicate
@@ -65,6 +84,12 @@ class SetOf(Function):
 
     def __repr__(self):
         return f"{{ {repr(self.var)} \\in {repr(self.set)}: {repr(self.predicate)} }}"
+    
+    def compile(self, spec):
+        """
+        Compile the set operation into a valid TLA+ term.
+        """
+        return SetOf(self.var.compile(spec), self.set.compile(spec), self.predicate.compile(spec))
    
 class SetFrom(Function):
     """ Set of elements fulfilling a certain condition
@@ -82,6 +107,12 @@ class SetFrom(Function):
 
     def __repr__(self):
         return f"{{ {repr(self.var)}: {repr(self.predicate)} }}"
+    
+    def compile(self, spec):
+        """
+        Compile the set operation into a valid TLA+ term.
+        """
+        return SetFrom(self.var.compile(spec), self.predicate.compile(spec))
     
     
 class SetExcept(Function):
@@ -102,6 +133,12 @@ class SetExcept(Function):
     def __repr__(self):
         return f"[{repr(self.set)} EXCEPT ![{repr(self.index)}] = {repr(self.value)}]"
     
+    def compile(self, spec):
+        """
+        Compile the set operation into a valid TLA+ term.
+        """
+        return SetExcept(self.set.compile(spec), self.index.compile(spec), self.value.compile(spec))
+    
 class Cardinality(Function):
     """ Returns the cardinality (number of elements) of a set.
         Syntax: Cardinality(set)
@@ -116,6 +153,12 @@ class Cardinality(Function):
     
     def __repr__(self):
         return f"Cardinality({repr(self.set)})"
+    
+    def compile(self, spec):
+        """
+        Compile the cardinality operation into a valid TLA+ term.
+        """
+        return Cardinality(self.set.compile(spec))
 
 
 class Union(Function):
@@ -137,6 +180,12 @@ class Union(Function):
             f"({repr(self.a)} \\cup {repr(self.b)})"
         )
         
+    def compile(self, spec):
+        """
+        Compile the union operation into a valid TLA+ term.
+        """
+        return Union(self.a.compile(spec), self.b.compile(spec))
+        
         
 class Intersection(Function):
     """ Returns the set resulting from the intersection of two sets.
@@ -156,4 +205,10 @@ class Intersection(Function):
         return (
             f"({repr(self.a)} \\cap {repr(self.b)})"
         )
+        
+    def compile(self, spec):
+        """
+        Compile the intersection operation into a valid TLA+ term.
+        """
+        return Intersection(self.a.compile(spec), self.b.compile(spec))
         
