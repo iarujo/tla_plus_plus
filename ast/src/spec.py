@@ -13,7 +13,7 @@ from src.variables.variables import Variables
 
 class Spec:
     
-    def __init__(self, module: str, extends: List[str], constants: Constants, assumptions: Optional[Assume], variables: Variables, defs: List[Definition]):
+    def __init__(self, module: str, extends: List[str], constants: Constants, assumptions: Optional[List[Assume]], variables: Variables, defs: List[Definition]):
         self.module = module # The name of the module
         self.extends = extends # The modules this module extends
         self.constants = constants # The constants of the module
@@ -26,7 +26,7 @@ class Spec:
         spec = f"------------------------ MODULE {self.module} ------------------------\n"
         spec += "EXTENDS " + ", ".join(self.extends) + "\n"
         spec += '' if self.constants is None else repr(self.constants) + "\n"
-        spec += '' if self.assumptions is None else repr(self.assumptions) + "\n\n"
+        spec += '' if self.assumptions is None else "\n\n".join([repr(a) for a in self.assumptions]) + "\n\n"
         spec += '' if self.variables is None else repr(self.variables) + "\n\n"
         spec += '' if self.defs is None else "\n\n".join([repr(d) for d in self.defs]) + "\n"
         spec += "\n============================================================================="

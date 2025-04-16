@@ -31,7 +31,7 @@ class Conjunction(Clause):
         
     def __repr__(self):
         lit = ["\n\t".join(repr(l).splitlines()) for l in self.literals]
-        return '(/\\ ' + '\n/\\ '.join(lit) + '\n)'
+        return '(/\\ ' + '\n /\\ '.join(lit) + '\n)'
     
     def compile(self, spec):
         """
@@ -50,7 +50,7 @@ class Disjunction(Clause):
         
     def __repr__(self):
         lit = ["\n\t".join(repr(l).splitlines()) for l in self.literals]
-        return '(\\/ ' + "\n\\/ ".join(lit) + '\n)'
+        return '(\\/ ' + "\n \\/ ".join(lit) + '\n)'
     
     def compile(self, spec):
         """

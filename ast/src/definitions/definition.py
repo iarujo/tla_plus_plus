@@ -7,7 +7,7 @@ class Definition():
     
     def __init__(self, name: str,
                 value: Union[Clause, Predicate, Term],
-                arguments: Optional[List[str]] = None):
+                arguments: Optional[List[str]] = []):
         self.name = name
         self.value = value
         self.arguments = arguments

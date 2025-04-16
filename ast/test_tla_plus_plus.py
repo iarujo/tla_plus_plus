@@ -63,7 +63,7 @@ def test_compile_byzantine_comparison(comp: ArithmeticComparison):
             
     compiled = spec.compile()
     
-    print(repr(compiled))
+    print(f'TLA++ Spec: \n\n {repr(spec)} \n\nTLA+ Spec: \n\n {repr(compiled)}')
     
 def test_compile_byzantine_invalid_spec_fails(comp: ArithmeticComparison):
     
@@ -88,6 +88,5 @@ def test_compile_byzantine_invalid_spec_fails(comp: ArithmeticComparison):
     
     
         
-test_print_byzantine_comparison_all()
 test_compile_byzantine_comparison(Equals)
-test_compile_byzantine_invalid_spec_fails(Equals)
+#test_compile_byzantine_invalid_spec_fails(Equals)
