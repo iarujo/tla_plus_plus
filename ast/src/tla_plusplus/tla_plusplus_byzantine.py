@@ -19,7 +19,6 @@ class ByzantineTerm(Term):
         """
         raise NotImplementedError("This method should be implemented in subclasses.")
         
-
 class ByzantineComparison(ByzantineTerm):
     """
     Compares a term (usally number of votes, or number of nodes) to a threshold value.
@@ -86,4 +85,4 @@ class ByzantineComparison(ByzantineTerm):
         if not ok:
             raise ValueError("The constant MaxByzantineNodes must be defined in the spec.")
         
-class ByzantineLeader(ByzantineTerm):
+#class ByzantineLeader(ByzantineTerm):

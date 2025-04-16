@@ -47,7 +47,7 @@ def test_one_round_honest_quorum():
     vb = Alias("vb", None)
     m = Alias("m", None)
     
-    Message = Definition("Message", Record(["type", "acc", "value"], [Set([String("vote")]), Acceptor, Values]))
+    Message = Definition("Message", Record(["type", "acc", "val"], [Set([String("vote")]), Acceptor, Values]))
     
     TypeOK = Definition("TypeOK", Conjunction([SubsetEquals(network, Alias("Message", None)), In(decided, Mapping([Acceptor],[Union(Values, Set([Scalar(-1)]))]))]))
     
@@ -68,9 +68,9 @@ def test_one_round_honest_quorum():
     
     Init = Definition("Init", Conjunction([network == Set([]), decided == RecordInstance([In(a, Acceptor)], [-1])]))
     
-    Send = Definition("Send", Alias("network'", None) == Union(network, Set([m])), [m])
+    Send = Definition("Send", network == Union(network, Set([m])), [m])
     
-    Decide = Definition("Decide", Conjunction([ExistentialQuantifier([v], Alias("QuorumAgreedValues", None), Alias("decided'", None) == SetExcept(decided, a, v)), Unchanged(network)]), [a])
+    Decide = Definition("Decide", Conjunction([ExistentialQuantifier([v], Alias("QuorumAgreedValues", None), decided == SetExcept(decided, a, v)), Unchanged(network)]), [a])
     
     CastVote = Definition("CastVote", Conjunction([Not(Alias("hasVoted", [a])), Alias("Send", [(RecordInstance(["type", "acc", "val"], [String("vote"), a, v]))]), Unchanged(decided)]), arguments=[a, v])
     
@@ -96,7 +96,7 @@ def test_byzantine_quorum_infinite():
     """ Replicate the ByzantineQuorumInfinite specification from the repo """
         
     name="ByzantineQuorumInfinite"
-    extends=["Integers", "FiniteSets"]
+    extends=["Integers", "FiniteSets"]  #TODO: Create a constant for Integers and FiniteSets (E.G Module Names or smth)
     
     Values = Constant("Values")
     Acceptors = Constant("Acceptors")
@@ -109,8 +109,8 @@ def test_byzantine_quorum_infinite():
     assumption=Assume(
         name="QuorumAssumption",
         expr=Conjunction([
-            LessThanEquals(Quorum, Cardinality(Acceptors)),
-            GreaterThan(Quorum, Cardinality(Acceptors) / Scalar(2))
+            LessThanEquals(Quorum, Cardinality(Acceptors) + NumberByzantineAcceptors),
+            GreaterThan(Quorum, (Cardinality(Acceptors) + NumberByzantineAcceptors) / Scalar(2))
         ])
     )
     
@@ -142,6 +142,7 @@ def test_byzantine_quorum_infinite():
     m2 = Alias("m2", None)
     vals = Alias("vals", None)
     threshold = Alias("threshold", None)
+    Q = Alias("Q", None)
     
     
     # Definitions
@@ -150,7 +151,7 @@ def test_byzantine_quorum_infinite():
         name="Message", 
         value=Record(
             ["type", "acc", "value", "epoch"], 
-            [Set([String("vote")]), Acceptors, Values, Alias("Nat", None)])
+            [Set([String("vote")]), Acceptors, Values, Alias("Nat", None)]) #TODO: Create a constant for Nat (E.G Module Names or smth)
     )
     
 
@@ -167,29 +168,28 @@ def test_byzantine_quorum_infinite():
         ])
     )
     
-    VotedFor = Definition(
-        name="VotedFor",
-        arguments=[v],
-        value=SetOf(
-            m,
-            network,
-            Equals(
-                m,
-                RecordInstance(
-                    ["type", "acc", "val", "epoch"],
-                    [String("vote"), Alias("m.acc", None), v, Alias("m.epoch", None)],
-                ),
-            ),
-        ),
-    )
-
     QuorumAgreedValues = Definition(
         name="QuorumAgreedValues",
-        arguments=[e, threshold],
+        arguments=[e],
         value=SetOf(
             v,
             Values,
-            Cardinality(Alias("VotedFor", [v])) >= threshold,
+            ExistentialQuantifier(
+                variables=[Q],
+                set=Subset(Acceptors),
+                predicate=Conjunction([
+                    ExistentialQuantifier(
+                        variables=[x],
+                        set=Range(Scalar(0), NumberByzantineAcceptors),
+                        predicate=Cardinality(Q) >= (Quorum - x)
+                    ),
+                    UniversalQuantifier(
+                        variables=[a1],
+                        set=Q,
+                        predicate=In(RecordInstance(["type", "acc", "val", "epoch"], [String("vote"), a1, v, e]) , network)
+                    )
+                ])
+            )
         ),
     )
 
@@ -219,7 +219,7 @@ def test_byzantine_quorum_infinite():
     RespectsDivergence = Definition(
         name="RespectsDivergence",
         arguments=[c],
-        value=(c - Alias("MinCounterValue", None)) <= Alias("MaxDivergence", None),
+        value=(c - Alias("MinCounterValue", None)) <= MaxDivergence,
     )
 
     GCDecided = Definition(
@@ -250,14 +250,14 @@ def test_byzantine_quorum_infinite():
             [
                 Alias("MinCounterValue", None) > Scalar(0),
                 Equals(
-                    Alias("counters'", None),
+                    Alias("counters'"),
                     RecordInstance(
                         [In(p, Acceptors)],
                         [IndexSet(counters, p) - Alias("MinCounterValue", None)],
                     ),
                 ),
                 Equals(
-                    Alias("network'", None),
+                    Alias("network'"),
                     SetOf(
                         m1,
                         SetFrom(
@@ -276,9 +276,9 @@ def test_byzantine_quorum_infinite():
                     ),
                 ),
                 Equals(
-                    Alias("decided'", None),
+                    Alias("decided'"),
                     RecordInstance(
-                        [In(a, Alias("DOMAIN decided", None))],
+                        [In(a, Alias("DOMAIN decided", None))], # TODO: Add DOMAIN operator
                         [Alias("GCDecided", [IndexSet(decided, a)])],
                     ),
                 ),
@@ -300,7 +300,7 @@ def test_byzantine_quorum_infinite():
         value=UniversalQuantifier(
             [p],
             Acceptors,
-            Alias("counters'[p]", None) >= IndexSet(counters, p),
+            Alias("counters'[p]", None) >= IndexSet(counters, p), # TODO: Add primed operator for variables (e.g. a' = a -> Primed(a) == a)
         ),
     )
 
@@ -456,35 +456,30 @@ def test_byzantine_quorum_infinite():
             [
                 Alias("NotDecided", [a, e]),
                 ExistentialQuantifier(
-                    [x],
-                    Range(Scalar(0), Alias("NumberByzantineAcceptors", None)),
-                    ExistentialQuantifier(
-                        [v],
-                        Alias("QuorumAgreedValues", [e, Quorum - x]),
-                        Conjunction(
-                            [
-                                UniversalQuantifier(
-                                    [ve],
-                                    IndexSet(decided, a),
-                                    NotEquals(
-                                        ve,
-                                        RecordInstance(["value", "epoch"], [v, e]),
-                                    ),
-                                ),
-                                Equals(
-                                    Alias("decided'", None),
-                                    SetExcept(
-                                        decided,
-                                        a,
-                                        Union(
-                                            Alias("@", None),
-                                            Set([RecordInstance(["value", "epoch"], [v, e])]),
-                                        ),
-                                    ),
-                                ),
-                            ],
+                    [v],
+                    Alias("QuorumAgreedValues", [e]),
+                    Conjunction([
+                        UniversalQuantifier(
+                            [ve],
+                            IndexSet(decided, a),
+                            NotEquals(
+                                ve,
+                                RecordInstance(["value", "epoch"], [v, e]),
+                            ),
                         ),
-                    ),
+                        Equals(
+                            Alias("decided'", None),
+                            SetExcept(
+                                decided,
+                                a,
+                                Union(
+                                    Alias("@", None), # TODO: Create constant for @ operator, create condition that it can only exist within EXCEPT construct
+                                    Set([RecordInstance(["value", "epoch"], [v, e])]),
+                                ),
+                            ),
+                        ),
+                    ]),
+
                 ),
                 Unchanged(counters),
                 Unchanged(network),
@@ -626,7 +621,7 @@ def test_byzantine_quorum_infinite():
     )
     
     defs = [
-        Message, TypeOK, VotedFor, QuorumAgreedValues, counterValues, MinCounterValue,
+        Message, TypeOK, QuorumAgreedValues, counterValues, MinCounterValue,
         RespectsDivergence, GCDecided, GarbageCollection, BoundedDivergence, Monotonic,
         Monotonicity, Agreement, EnoughVotes, AllDecided, Termination, hasVoted,
         NotDecided, Send, Decide, CastVote, IncreaseEpoch, Init, Next, _Spec, Inv
