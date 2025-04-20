@@ -5,8 +5,10 @@ Note that the validity of the produced TLA+ depends on the correctness of the tr
 
 """
 
-from typing import List, Optional
+from typing import List, Optional, Union
 from src.definitions.definition import Definition
+from src.definitions.clause.clause import Clause, Conjunction, Disjunction
+from src.definitions.predicates.predicates import Predicate
 from src.constants.constants import Constants
 from src.assume.assume import Assume
 from src.variables.variables import Variables
@@ -24,10 +26,10 @@ class Spec:
     
     def __repr__(self):
         spec = f"------------------------ MODULE {self.module} ------------------------\n"
-        spec += "EXTENDS " + ", ".join(self.extends) + "\n"
+        spec += '' if self.constants is None else "EXTENDS " + ", ".join(self.extends) + "\n"
         spec += '' if self.constants is None else repr(self.constants) + "\n"
         spec += '' if self.assumptions is None else "\n\n".join([repr(a) for a in self.assumptions]) + "\n\n"
-        spec += '' if self.variables is None else repr(self.variables) + "\n\n"
+        spec += ('' if self.variables is None else repr(self.variables)) + "\n\n"
         spec += '' if self.defs is None else "\n\n".join([repr(d) for d in self.defs]) + "\n"
         spec += "\n============================================================================="
         return spec
@@ -38,11 +40,32 @@ class Spec:
         """
         return self.constants.constants
     
+    def get_variables(self):
+        """
+        Returns the variables of the module.
+        """
+        return self.variables.variables
+    
+    def prepend_to_defs(self, definition: Definition):
+        if self.defs is None:
+            self.defs = [definition]
+        else:
+            self.defs = [definition] + self.defs
+        
     def compile(self):
         """
         Compile this spec into a valid TLA+ specification.
         """
-        return Spec(self.module, self.extends, self.constants, None if self.assumptions is None else [a.compile(self) for a in self.assumptions], self.variables, None if self.defs is None else [d.compile(self) for d in self.defs])
-
+        compiled_spec = Spec(self.module, self.extends, self.constants, None if self.assumptions is None else [], self.variables, None if self.defs is None else [])
+        # We compile the assumptions and defts with the new spec so they can append any neccessary definitions. This also means that definitions and assumptions are not able to see other definitions nor assumptions
+        if not self.assumptions is None:
+            new_assumptions = [a.compile(compiled_spec) for a in self.assumptions]
+            for a in new_assumptions:
+                compiled_spec.assumptions.append(a)
+        if not self.defs is None:
+            new_defs = [d.compile(compiled_spec) for d in self.defs]
+            for d in new_defs:
+                compiled_spec.defs.append(d)
+        return compiled_spec
 
         

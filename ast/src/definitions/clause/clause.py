@@ -33,6 +33,9 @@ class Conjunction(Clause):
         lit = ["\n\t".join(repr(l).splitlines()) for l in self.literals]
         return '(/\\ ' + '\n /\\ '.join(lit) + '\n)'
     
+    def add_literal(self, literal: Predicate):
+        self.literals = self.literals.append(literal)
+    
     def compile(self, spec):
         """
         Compile this clause into a valid TLA+ specification.
@@ -51,6 +54,9 @@ class Disjunction(Clause):
     def __repr__(self):
         lit = ["\n\t".join(repr(l).splitlines()) for l in self.literals]
         return '(\\/ ' + "\n \\/ ".join(lit) + '\n)'
+    
+    def add_literal(self, literal: Predicate):
+        self.literals = self.literals.append(literal)
     
     def compile(self, spec):
         """

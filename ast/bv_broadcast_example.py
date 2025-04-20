@@ -113,7 +113,7 @@ def bv_ast():
                     set=Alias("Values", None),
                     predicate=Conjunction([
                         Not(Alias("HasSent", [a, v])),
-                        Alias("Count", [v]) > T,
+                        ByzantineComparison(Alias("Count", [v]), GreaterThan, T),
                         Alias("Send", [RecordInstance(["acc", "val"], [a, v])]),
                         Unchanged(binValues)
                     ])
@@ -126,7 +126,7 @@ def bv_ast():
                     variables=[v],
                     set=Alias("Values", None),
                     predicate=Conjunction([
-                        Alias("Count", [v]) > (Scalar(2)*T)+Scalar(1),
+                        ByzantineComparison(Alias("Count", [v]), GreaterThan, (Scalar(2)*T)+Scalar(1)),
                         Equals(Alias("binValues'", None), SetExcept(
                             set=binValues,
                             index=a,
@@ -159,4 +159,4 @@ def bv_ast():
     
     return spec
     
-print(bv_ast())
+print(bv_ast().compile())

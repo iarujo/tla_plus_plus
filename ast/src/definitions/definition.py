@@ -11,6 +11,9 @@ class Definition():
         self.name = name
         self.value = value
         self.arguments = arguments
+        
+    def get_name(self):
+        return self.name
 
     def __repr__(self):
         if(self.arguments):
