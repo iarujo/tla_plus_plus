@@ -48,7 +48,7 @@ class UniversalQuantifier(Predicate):
         self.predicate = predicate
         
     def __repr__(self):
-        return f"\\A {', '.join(repr(v) for v in self.variables)} \\in  {repr(self.set)}: \n\t{"\t".join([f'{l}\n' for l in repr(self.predicate).splitlines()])}"
+        return f"(\\A {', '.join(repr(v) for v in self.variables)} \\in  {repr(self.set)}: {repr(self.predicate)})" #{"\n\t".join([f'{l}' for l in repr(self.predicate).splitlines()])}"
 
     def compile(self, spec):
         return UniversalQuantifier(
@@ -69,7 +69,7 @@ class ExistentialQuantifier(Predicate):
         self.predicate = predicate
         
     def __repr__(self):
-        return f"\\E {', '.join(repr(v) for v in self.variables)} \\in {repr(self.set)}: \n\t{"\t".join([f'{l}\n' for l in repr(self.predicate).splitlines()])}"
+        return f"(\\E {', '.join(repr(v) for v in self.variables)} \\in {repr(self.set)}: {repr(self.predicate)})" # {"\n\t".join([f'{l}' for l in repr(self.predicate).splitlines()])}"
     
     def compile(self, spec):
         return ExistentialQuantifier(

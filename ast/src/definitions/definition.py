@@ -13,7 +13,16 @@ class Definition():
         self.arguments = arguments
         
     def get_name(self):
+        """
+        Returns the name of the definition.
+        """
         return self.name
+    
+    def set_value(self, value: Union[Clause, Predicate, Term]):
+        """
+        Sets the value of the definition.
+        """
+        self.value = value
 
     def __repr__(self):
         if(self.arguments):

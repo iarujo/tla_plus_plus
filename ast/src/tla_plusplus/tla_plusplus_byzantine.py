@@ -2,9 +2,9 @@ from typing import Union
 from src.spec import Spec
 from src.definitions.definition import Definition
 from src.definitions.clause.clause import Clause, Conjunction, Implication
-from src.definitions.predicates.predicates import Predicate, ArithmeticComparison, ExistentialQuantifier, In, Not
+from src.definitions.predicates.predicates import TRUE, FALSE,  Predicate, ArithmeticComparison, ExistentialQuantifier, In, Not
 from src.definitions.terms.terms import Term, Scalar, Alias, Constant, Variable, Scalar, Constant, Alias, Variable, Function, Choose, BinaryArithmeticOp, Range
-from src.definitions.terms.finiteSet import Cardinality
+from src.definitions.terms.finiteSet import Cardinality, Set
 
 NumericTerm = Union[Scalar, Alias, Constant, Variable, Function, Choose, BinaryArithmeticOp]
 
@@ -35,7 +35,7 @@ class ByzantineComparison(ByzantineTerm):
     
         CONSTANT MaxByzantineNodes
         ...
-        \E x \in 0..MaxByzantineNodes: 
+        \\E x \\in 0..MaxByzantineNodes: 
             variable comparison threshold - x
     """
     
@@ -95,8 +95,7 @@ class ByzantineLeader(ByzantineTerm):
     
     Converts the code from this:
     
-        VARIABLES LEADER, Acceptors, MaxByzantineNodes // Use Acceptors keyword to indincate that's your set of honest acceptors, these are the participants of your protocol
-
+        VARIABLES leaderIsByzantine
         ...
         
         // These definitions should be placed inside the code block where the behaviour mught differ
@@ -106,18 +105,22 @@ class ByzantineLeader(ByzantineTerm):
     
     into this:
     
-        VARIABLES LEADER, Acceptors, MaxByzantineNodes
+        VARIABLES leaderIsByzantine
 
-        LEADER \in {0..(Cardinality(Acceptors) + MaxByzantineNodes)}
+        LeaderTypeOK == leaderIsByzantine \\in {TRUE, FALSE}
 
-        leaderIsByzantine = LEADER >= Cardinality(Acceptors)
 
         ...
+        
+        // These definitions should be placed inside the code block where the behaviour might differ
+            /\\ leaderIsByzantine => <user-defined honest behaviour specification>
+            /\\ ~leaderIsByzantine => <user-defined byzantine behaviour specification>
+        
+        ...
 
-        // These definitions should be placed inside the code block where the behaviour mught differ
-            /\ leaderIsByzantine => <user-defined honest behaviour specification>
-            /\ ~leaderIsByzantine => <user-defined byzantine behaviour specification>
-    
+        Init == /\\ ...
+                        ...
+                        /\\ leaderIsByzantine\\in {TRUE, FALSE}
     """
     
     def __init__(self, hon_behaviour: Union[Predicate, Clause], byz_behaviour: Union[Predicate, Clause]):
@@ -125,31 +128,38 @@ class ByzantineLeader(ByzantineTerm):
         self.byz_behaviour = byz_behaviour
         
     def __repr__(self):
-        return f"HONEST LEADER {"\t".join([f'{l}\n' for l in repr(self.hon_behaviour).splitlines()])}\nBYZANTINE LEADER {"\t".join([f'{l}\n' for l in repr(self.byz_behaviour).splitlines()])}" # {"\t".join([f'{l}\n' for l in repr(self.hon_behaviour).splitlines()])}
+        return f"HONEST LEADER {"\t".join([f'{l}\n' for l in repr(self.hon_behaviour).splitlines()])}\nBYZANTINE LEADER {"\t".join([f'{l}\n' for l in repr(self.byz_behaviour).splitlines()])}" # {"\\t".join([f'{l}\\n' for l in repr(self.hon_behaviour).splitlines()])}
     
     def compile(self, spec: Spec):
         self.__check_syntax(spec)
         
-        LEADER = Variable("LEADER")
-        Acceptors = Constant("Acceptors")
-        MaxByzantineNodes = Constant("MaxByzantineNodes")
+        leaderIsByzantine = Variable("leaderIsByzantine")
         
-        # LEADER \in {0..(Cardinality(Acceptors) + MaxByzantineNodes)}
+        # LeaderTypeOK == leaderIsByzantine \\in {TRUE, FALSE}
         LeaderTypeOK = Definition(
             name="LeaderTypeOK",
             value= In(
-                left=LEADER,
-                right=Range(Scalar(0), Cardinality(Acceptors)) + MaxByzantineNodes
+                left=leaderIsByzantine,
+                right=Set([TRUE, FALSE])
             )
         )
+        # TODO: Can convert this into another queue message
         spec.prepend_to_defs(LeaderTypeOK)
         
-        # leaderIsByzantine == LEADER >= Cardinality(Acceptors)
-        leaderIsByzantine = Definition(
-            name="leaderIsByzantine",
-            value=LEADER >= Cardinality(Acceptors)
-        )
-        spec.prepend_to_defs(leaderIsByzantine)
+        Init = spec.get_init()
+        if Init is not None:
+            Init = Init.compile()
+            if isinstance(Init.value, Conjunction):
+                Init.add_clause(leaderIsByzantine.In({TRUE, FALSE}))
+            else:
+                Init.set_value(
+                    Conjunction([
+                        Init.value,
+                        leaderIsByzantine.In({TRUE, FALSE})
+                    ])
+                )
+            # Add the new Init to the spec
+            spec.update_later(Init)
         
         return Conjunction([
             Implication(
@@ -174,32 +184,13 @@ class ByzantineLeader(ByzantineTerm):
         if not isinstance(self.byz_behaviour, (Scalar, Alias, Constant, Variable, Scalar, Variable, Function, Choose, BinaryArithmeticOp)):
             raise TypeError("The byzantine behaviour description must have a boolean value.")
         
-        # Check is MaxByzantineNodes is in the spec's constants
-        constants = spec.get_constants()
-        ok_acceptor = False
-        ok_maxbyznodes = False
-        for c in constants:
-            if c.get_name() == "Acceptors":
-                ok_acceptor = True
-            if c.get_name() == "MaxByzantineNodes":
-                ok_maxbyznodes = True
-            if ok_leader and ok_acceptor and ok_maxbyznodes:
-                break
-            
-        # TODO: use string formats to reduce the size of this code
-        if not ok_acceptor:
-            if not ok_maxbyznodes:
-                raise ValueError("The constants MaxByzantineNodes and Acceptor must be defined in the spec.")
-            else:
-                raise ValueError("The constant Acceptor must be defined in the spec.")
-        if not ok_maxbyznodes:
-            raise ValueError("The constant MaxByzantineNodes must be defined in the spec.")
-        
         variables = spec.get_variables()
         ok_leader = False
+        if variables is None:
+            raise ValueError("The variable leaderIsByzantine must be defined in the spec.")
         for v in variables:
-            if v.get_name() == "LEADER":
+            if v.get_name() == "leaderIsByzantine":
                 ok_leader = True
                 break
         if not ok_leader:
-            raise ValueError("The variable LEADER must be defined in the spec.")
+            raise ValueError("The variable leaderIsByzantine must be defined in the spec.")
