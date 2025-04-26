@@ -1,28 +1,15 @@
-from typing import Union
+import typing
 from src.spec import Spec
 from src.definitions.definition import Definition
 from src.definitions.clause.clause import Clause, Conjunction, Implication
 from src.definitions.predicates.predicates import TRUE, FALSE,  Predicate, ArithmeticComparison, ExistentialQuantifier, In, Not
-from src.definitions.terms.terms import Term, Scalar, Alias, Constant, Variable, Scalar, Constant, Alias, Variable, Function, Choose, BinaryArithmeticOp, Range
-from src.definitions.terms.finiteSet import Cardinality, Set
+from src.definitions.terms.terms import Term, Scalar, Alias, Constant, Variable, Scalar, Constant, Alias, Variable, Function, Choose, BinaryArithmeticOp, Range, String
+from src.definitions.terms.finiteSet import Cardinality, Set, Union
+from src.tla_plusplus.tla_plusplus_term import TLAPlusPlusTerm
 
-NumericTerm = Union[Scalar, Alias, Constant, Variable, Function, Choose, BinaryArithmeticOp]
-
-class ByzantineTerm(Term):
-    """
-    Abstract class for all terms of our extension to TLA+ that deal with simulating byzantine behaviour.
-    """
-    
-    def __init__(self):
-        super().__init__()
+NumericTerm = typing.Union[Scalar, Alias, Constant, Variable, Function, Choose, BinaryArithmeticOp]
         
-    def compile(self, spec):
-        """
-        Transforms the term into a valid TLA+ term.
-        """
-        raise NotImplementedError("This method should be implemented in subclasses.")
-        
-class ByzantineComparison(ByzantineTerm):
+class ByzantineComparison(TLAPlusPlusTerm):
     """
     Compares a term (usally number of votes, or number of nodes) to a threshold value.
     
@@ -88,14 +75,15 @@ class ByzantineComparison(ByzantineTerm):
         if not ok:
             raise ValueError("The constant MaxByzantineNodes must be defined in the spec.")
         
-class ByzantineLeader(ByzantineTerm):
+class ByzantineLeader(TLAPlusPlusTerm):
     """
     Used to simulate a leader in a protocol that may or may not have byzantine behaviour.
+    Agnostic to the number of byzantine nodes in the protocol.
     The leader changes on each round
     
     Converts the code from this:
     
-        VARIABLES leaderIsByzantine
+        VARIABLES king // Let this be the variable used to model the leader in the original spec
         ...
         
         // These definitions should be placed inside the code block where the behaviour mught differ
@@ -105,10 +93,13 @@ class ByzantineLeader(ByzantineTerm):
     
     into this:
     
-        VARIABLES leaderIsByzantine
+        VARIABLES king
 
-        LeaderTypeOK == leaderIsByzantine \\in {TRUE, FALSE}
-
+        TypeOK == /\ ...
+					...
+					/\ king \in (<Original Set> \cup {"byzantine"})
+					
+        leaderIsByzantine == king \in {"byzantine"}
 
         ...
         
@@ -120,54 +111,75 @@ class ByzantineLeader(ByzantineTerm):
 
         Init == /\\ ...
                         ...
-                        /\\ leaderIsByzantine\\in {TRUE, FALSE}
+                        /\\ king \in (<Original Set> \cup {"byzantine"})
     """
     
-    def __init__(self, hon_behaviour: Union[Predicate, Clause], byz_behaviour: Union[Predicate, Clause]):
+    def __init__(self, hon_behaviour: typing.Union[Predicate, Clause], byz_behaviour: typing.Union[Predicate, Clause]):
         self.hon_behaviour = hon_behaviour
         self.byz_behaviour = byz_behaviour
         
     def __repr__(self):
-        return f"HONEST LEADER {"\t".join([f'{l}\n' for l in repr(self.hon_behaviour).splitlines()])}\nBYZANTINE LEADER {"\t".join([f'{l}\n' for l in repr(self.byz_behaviour).splitlines()])}" # {"\\t".join([f'{l}\\n' for l in repr(self.hon_behaviour).splitlines()])}
+        return f"HONEST LEADER {repr(self.hon_behaviour)} /\ BYZANTINE LEADER {repr(self.byz_behaviour)}"
     
     def compile(self, spec: Spec):
         self.__check_syntax(spec)
         
-        leaderIsByzantine = Variable("leaderIsByzantine")
+        # TODO: make a different version where leaderIsByzantine doesn't exist, and we just add one more state ("byzantine") to the states from king
+        king = Variable("king")
         
-        # LeaderTypeOK == leaderIsByzantine \\in {TRUE, FALSE}
-        LeaderTypeOK = Definition(
-            name="LeaderTypeOK",
+        # leaderIsByzantine == king \in {"byzantine"}
+        leaderIsByzantine = Definition(
+            name="leaderIsByzantine",
             value= In(
-                left=leaderIsByzantine,
-                right=Set([TRUE, FALSE])
+                left=king,
+                right=Set([String("byzantine")])
             )
+            
         )
-        # TODO: Can convert this into another queue message
-        spec.prepend_to_defs(LeaderTypeOK)
+        spec.update_later(leaderIsByzantine)
         
-        Init = spec.get_init()
-        if Init is not None:
-            Init = Init.compile()
-            if isinstance(Init.value, Conjunction):
-                Init.add_clause(leaderIsByzantine.In({TRUE, FALSE}))
-            else:
-                Init.set_value(
-                    Conjunction([
-                        Init.value,
-                        leaderIsByzantine.In({TRUE, FALSE})
-                    ])
-                )
+        def change_king_definition(king: Variable, definition: Definition):
+            
+            if definition is None:
+                raise ValueError(f"The {definition.get_name()} definition must be defined in the spec.")
+                
+            # Compile Init
+            definition = definition.compile(spec)
+            if not isinstance(definition.value, Conjunction):
+                raise ValueError(f"The {definition.get_name()} definition must be a conjunction.")
+            
+            con = definition.value
+            changedKing= False
+            # Find where king is defined in the Init definition
+            for i, l in enumerate(con.literals):
+                if isinstance(l, In) and repr(l.left) == repr(king):
+                    con.literals[i] = In(
+                            left=king,
+                            right=Union(l.right, Set([String("byzantine")]))
+                        )
+                    changedKing = True
+                    
+            if not changedKing:
+                raise ValueError(f"The {definition.get_name()} definition must contain the variable king inside a statement of the form king \\in SET.")
+
+            definition.set_value(con)
             # Add the new Init to the spec
-            spec.update_later(Init)
+            spec.update_later(definition)
+            
+        
+        # TypeOK is changed to accomodate for byzantine nodes
+        change_king_definition(king, spec.get_typeok())
+        
+        # Init is changed to accomodate for byzantine nodes
+        change_king_definition(king, spec.get_init())
         
         return Conjunction([
             Implication(
-                p=leaderIsByzantine,
+                p=Not(Alias("leaderIsByzantine", None)),
                 q=self.hon_behaviour.compile(spec)
             ),
             Implication(
-                p=Not(leaderIsByzantine),
+                p=Alias("leaderIsByzantine", None),
                 q=self.byz_behaviour.compile(spec)
             )
         ])
@@ -176,21 +188,21 @@ class ByzantineLeader(ByzantineTerm):
         """
         Check the syntax of the Byzantine leader term.
         """
-        # Check if the variable is a scalar or an alias
+        
         if not isinstance(self.hon_behaviour, (Predicate, Clause)):
             raise TypeError("The honest behaviour description must have a boolean value.")
         
         # Check if the threshold is a scalar or an alias
-        if not isinstance(self.byz_behaviour, (Scalar, Alias, Constant, Variable, Scalar, Variable, Function, Choose, BinaryArithmeticOp)):
+        if not isinstance(self.byz_behaviour, (Predicate, Clause)):
             raise TypeError("The byzantine behaviour description must have a boolean value.")
         
         variables = spec.get_variables()
         ok_leader = False
         if variables is None:
-            raise ValueError("The variable leaderIsByzantine must be defined in the spec.")
+            raise ValueError("The variable king must be defined in the spec.")
         for v in variables:
-            if v.get_name() == "leaderIsByzantine":
+            if repr(v) == "king":
                 ok_leader = True
                 break
         if not ok_leader:
-            raise ValueError("The variable leaderIsByzantine must be defined in the spec.")
+            raise ValueError("The variable king must be defined in the spec.")

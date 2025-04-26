@@ -10,6 +10,7 @@ from src.definitions.terms.records import Record, RecordInstance, Mapping
 from src.definitions.terms.finiteSet import Subset, Set, SetOf, SetFrom, SetExcept, IndexSet, Cardinality, Union, Intersection
 from src.definitions.temporal import Box, Diamond, FrameCondition, WeakFairness
 from src.tla_plusplus.tla_plusplus_byzantine import ByzantineComparison, ByzantineLeader
+from src.tla_plusplus.tla_plusplus_syntactic_sugar import Random
 
 def king_ast():    
     # AST of the original spec
@@ -26,7 +27,8 @@ def king_ast():
     network = Variable("network")
     value = Variable("value")
     king = Variable("king")
-    vars = Variables([network, value, king])
+    leaderIsByzantine = Variable("leaderIsByzantine")
+    vars = Variables([network, value, king, leaderIsByzantine])
     
     # Assumptions
     assum = Assume(
@@ -169,6 +171,7 @@ def king_ast():
                 Equals(Alias("network'", None), Alias("Propose", [a, Choose(v, Alias("BroadcastAgreedValues", None), TRUE())])),
                 Unchanged(value),
                 Unchanged(king),
+                Unchanged(leaderIsByzantine),
                 ]),
             Conjunction([
                 Cardinality(Alias("ProposeAgreedValues", None)) > Scalar(0),
@@ -256,7 +259,7 @@ def king_ast():
     
     return spec 
 
-def king_ast_tlaplusplus():    
+def king_ast_byzantine():    
     # AST of the original spec
     
     extends = ["Integers", "FiniteSets"]
@@ -265,7 +268,8 @@ def king_ast_tlaplusplus():
     Acceptors = Constant("Acceptors")
     Values = Constant("Values")
     F = Constant("F")
-    consts = Constants([Acceptors, Values, F])
+    MaxByzantineNodes = Constant("MaxByzantineNodes")
+    consts = Constants([Acceptors, Values, F, MaxByzantineNodes])
     
     # Variables
     network = Variable("network")
@@ -276,7 +280,7 @@ def king_ast_tlaplusplus():
     # Assumptions
     assum = Assume(
         name="FAssumption",
-        expr= F <= (Cardinality(Acceptors) / Scalar(3)),
+        expr= F <= ((Cardinality(Acceptors) + MaxByzantineNodes) / Scalar(3)),
     )
     
     # Aliases
@@ -305,6 +309,11 @@ def king_ast_tlaplusplus():
     Q = Alias("Q", None)
     
     # Definitions
+    
+    Participants = Definition(
+        name="Participants",
+        value=Cardinality(Acceptors) + MaxByzantineNodes,
+    )
         
     Message = Definition(
         name="Message", 
@@ -356,7 +365,7 @@ def king_ast_tlaplusplus():
                 variables=[Q],
                 set=Subset(Acceptors),
                 predicate=Conjunction([
-                    Cardinality(Q) >= threshold, # Add byzantine comparison here
+                    ByzantineComparison(Cardinality(Q), GreaterThanEquals ,threshold), # Add byzantine comparison here
                     UniversalQuantifier(
                         variables=[a1],
                         set=Q,
@@ -380,7 +389,7 @@ def king_ast_tlaplusplus():
             name="AgreedValues", 
             arguments=[
                 String("broadcast"),
-                Cardinality(Acceptors) - F
+                Alias("Participants", None) - F
             ]
         ),
     )
@@ -428,8 +437,11 @@ def king_ast_tlaplusplus():
     RoundThree = Definition(
         name="RoundThree",
         value=Conjunction([
-            Cardinality(Alias("AgreedValues", [String("propose"), Cardinality(Acceptors) - F])) == Scalar(0),
-            Equals(Alias("value'", None), SetExcept(value, a, IndexSet(value, king))),
+            Cardinality(Alias("AgreedValues", [String("propose"), Alias("Participants", None) - F])) == Scalar(0),
+            ByzantineLeader(
+                hon_behaviour=Alias("value'", None) == SetExcept(value, a, IndexSet(value, king)), 
+                byz_behaviour=Alias("value'", None) == SetExcept(value, a, Random(Values)),
+            ),
             Unchanged(network),
             Unchanged(king),
         ]),
@@ -495,11 +507,11 @@ def king_ast_tlaplusplus():
         ),
     )
     
-    definitions = [Message, TypeOK, Broadcast, Propose, AgreedValues, BroadcastAgreedValues, ProposeAgreedValues, RoundOne, RoundTwo, RoundThree, Init, Next, _Spec]
+    definitions = [Participants, Message, TypeOK, Broadcast, Propose, AgreedValues, BroadcastAgreedValues, ProposeAgreedValues, RoundOne, RoundTwo, RoundThree, Init, Next, _Spec]
     
     spec = Spec(module="KingAlgorithm", extends=extends, constants=consts, assumptions=[assum], variables=vars, defs=definitions)
     
     return spec
 
-print(repr(king_ast()))
-print(repr(king_ast().compile()))
+print(repr(king_ast_byzantine()))
+print(repr(king_ast_byzantine().compile()))
