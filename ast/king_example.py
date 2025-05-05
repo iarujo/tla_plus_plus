@@ -11,6 +11,7 @@ from src.definitions.terms.finiteSet import Subset, Set, SetOf, SetFrom, SetExce
 from src.definitions.temporal import Box, Diamond, FrameCondition, WeakFairness
 from src.tla_plusplus.tla_plusplus_byzantine import ByzantineComparison, ByzantineLeader
 from src.tla_plusplus.tla_plusplus_syntactic_sugar import Random
+from comparison_metrics import compare_asts
 
 def king_ast():    
     # AST of the original spec
@@ -365,7 +366,7 @@ def king_ast_byzantine():
                 variables=[Q],
                 set=Subset(Acceptors),
                 predicate=Conjunction([
-                    ByzantineComparison(Cardinality(Q), GreaterThanEquals ,threshold), # Add byzantine comparison here
+                    ByzantineComparison(Cardinality(Q), GreaterThanEquals ,threshold, True, [["AgreedValues", "BroadcastAgreedValues", "RoundTwo", "Next"], ["AgreedValues", "ProposeAgreedValues", "RoundTwo", "Next"]]), # Add byzantine comparison here
                     UniversalQuantifier(
                         variables=[a1],
                         set=Q,
@@ -513,5 +514,5 @@ def king_ast_byzantine():
     
     return spec
 
-print(repr(king_ast_byzantine()))
-print(repr(king_ast_byzantine().compile()))
+if __name__ == "__main__":
+    compare_asts(king_ast_byzantine(), king_ast_byzantine().compile())

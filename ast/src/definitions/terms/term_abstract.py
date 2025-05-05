@@ -8,6 +8,13 @@ class AbstractTerm(ABC):
     @abstractmethod
     def __repr__(self):
         pass
+    
+    @abstractmethod
+    def preCompile(self, spec):
+        """
+        Pre-compilation applies changes to the spec without necessarily returning new objects
+        """
+        pass
 
     @abstractmethod
     def compile(self, spec):

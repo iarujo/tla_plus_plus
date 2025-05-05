@@ -10,6 +10,7 @@ from src.definitions.terms.records import Record, RecordInstance, Mapping
 from src.definitions.terms.finiteSet import Subset, Set, SetOf, SetFrom, SetExcept, IndexSet, Cardinality, Union, Intersection
 from src.definitions.temporal import Box, Diamond, FrameCondition, WeakFairness
 from src.tla_plusplus.tla_plusplus_byzantine import ByzantineComparison
+from comparison_metrics import compare_asts
 
 def bv_ast():
     
@@ -113,7 +114,7 @@ def bv_ast():
                     set=Alias("Values", None),
                     predicate=Conjunction([
                         Not(Alias("HasSent", [a, v])),
-                        ByzantineComparison(Alias("Count", [v]), GreaterThan, T),
+                        ByzantineComparison(Alias("Count", [v]), GreaterThan, T, True, [["Next"]]),
                         Alias("Send", [RecordInstance(["acc", "val"], [a, v])]),
                         Unchanged(binValues)
                     ])
@@ -126,7 +127,7 @@ def bv_ast():
                     variables=[v],
                     set=Alias("Values", None),
                     predicate=Conjunction([
-                        ByzantineComparison(Alias("Count", [v]), GreaterThan, (Scalar(2)*T)+Scalar(1)),
+                        ByzantineComparison(Alias("Count", [v]), GreaterThan, (Scalar(2)*T)+Scalar(1), True, [["Next"]]),
                         Equals(Alias("binValues'", None), SetExcept(
                             set=binValues,
                             index=a,
@@ -158,5 +159,6 @@ def bv_ast():
     spec = Spec(module=name, extends=extends, constants=constants, assumptions=[], variables=vars, defs=defs)
     
     return spec
-    
-print(bv_ast().compile())
+
+if __name__ == "__main__":
+    compare_asts(bv_ast(), bv_ast().compile())

@@ -1,3 +1,5 @@
+from rich.console import Console
+from rich.text import Text
 from typing import List
 from src.spec import Spec
 from src.definitions.definition import Definition
@@ -38,7 +40,16 @@ class Havoc(TLAPlusPlusTerm):
     def __repr__(self):
         return f"HAVOC {", ".join([repr(v) for v in self.vars])}"
     
+    def preCompile(self, spec):
+        """
+        Pre-compilation applies changes to the spec without necessarily returning new objects
+        """
+        pass
+    
     def compile(self, spec: Spec):
+        
+        console = Console()
+        console.print("[yellow]Compiling for Havoc...")
         
         def small_havoc(var: Variable, set: Term):
             """ Helper function to compile a single havoc statement. """
@@ -53,6 +64,13 @@ class Havoc(TLAPlusPlusTerm):
         for v, z in zip(self.vars, self.sets):
             root.add_literal(small_havoc(v, z))
         return root
+    
+    def changeAliasTo(self, old: str, new: str):
+        """
+        Change an alias inside the term to a new one.
+        """
+        for s in self.sets:
+            s.changeAliasTo(old, new)
             
       
 class Random(TLAPlusPlusTerm):
@@ -70,13 +88,26 @@ class Random(TLAPlusPlusTerm):
     def __repr__(self):
         return f"RANDOM {repr(self.set)}"
     
+    def preCompile(self, spec):
+        """
+        Pre-compilation applies changes to the spec without necessarily returning new objects
+        """
+        pass
+    
     def compile(self, spec: Spec):
+        console = Console()
+        console.print("[yellow]Compiling for Random Term...")
         v = Alias("v", None)
         return Choose(
             var=v, 
             set=self.set.compile(spec), 
             predicate=TRUE()
         )
-            
+        
+    def changeAliasTo(self, old: str, new: str):
+        """
+        Change an alias inside the term to a new one.
+        """
+        self.set.changeAliasTo(old, new)
             
     

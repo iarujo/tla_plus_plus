@@ -10,6 +10,8 @@ from src.definitions.terms.records import Record, RecordInstance, Mapping
 from src.definitions.terms.finiteSet import Subset, Set, SetOf, SetFrom, SetExcept, IndexSet, Cardinality, Union, Intersection
 from src.definitions.temporal import Box, Diamond, FrameCondition, WeakFairness
 from src.tla_plusplus.tla_plusplus_byzantine import ByzantineComparison
+from comparison_metrics import compare_asts
+
 
 def quorum_ast():
     """ Replicate the ByzantineQuorumInfinite specification from the repo in TLA++ """
@@ -100,7 +102,9 @@ def quorum_ast():
                     ByzantineComparison(
                         variable=Cardinality(Q),
                         threshold=Quorum,
-                        comparison=GreaterThanEquals
+                        comparison=GreaterThanEquals,
+                        inNext=True,
+                        trace=[["QuorumAgreedValues", "Decide", "Next"]]
                     ),
                     UniversalQuantifier(
                         variables=[a1],
@@ -549,12 +553,14 @@ def quorum_ast():
     
     return spec
 
-# Store TLA++ and TLA+ Specs to files
+if __name__ == "__main__":
+    compare_asts(quorum_ast(), quorum_ast().compile())
     
-f = open("ByzantineQuorumInfiniteTLAplusplus.tla", "w")
-f.write(repr(quorum_ast()))
-f.close()
-    
-f = open("ByzantineQuorumInfiniteCompiledTLAplusplus.tla", "w")
-f.write(repr(quorum_ast().compile()))
-f.close()
+    # Store TLA++ and TLA+ Specs to files
+    #f = open("ByzantineQuorumInfiniteTLAplusplus.tla", "w")
+    #f.write(repr(quorum_ast()))
+    #f.close()
+        
+    #f = open("ByzantineQuorumInfiniteCompiledTLAplusplus.tla", "w")
+    #f.write(repr(quorum_ast().compile()))
+    #f.close()

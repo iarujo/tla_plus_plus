@@ -1,4 +1,6 @@
 import typing
+from rich.console import Console
+from rich.text import Text
 from src.spec import Spec
 from src.definitions.definition import Definition
 from src.definitions.clause.clause import Clause, Conjunction, Implication
@@ -8,6 +10,7 @@ from src.definitions.terms.finiteSet import Cardinality, Set, Union
 from src.tla_plusplus.tla_plusplus_term import TLAPlusPlusTerm
 
 NumericTerm = typing.Union[Scalar, Alias, Constant, Variable, Function, Choose, BinaryArithmeticOp]
+Trace = typing.List[typing.Union[typing.List[str]]] # Trace of definitions that call each other, ending up in the expression containing the Byzantine term. List[0] is the closest function calling the Byzantine term, and the last element is the paremt of the previous functions. All traces must end in Next
         
 class ByzantineComparison(TLAPlusPlusTerm):
     """
@@ -26,17 +29,37 @@ class ByzantineComparison(TLAPlusPlusTerm):
             variable comparison threshold - x
     """
     
-    def __init__(self, variable: NumericTerm, comparison: ArithmeticComparison, threshold: NumericTerm):
+    def __init__(self, variable: NumericTerm, comparison: ArithmeticComparison, threshold: NumericTerm, inNext: bool, trace: Trace):
         # Note: as there are no types per se in TLA+, we can use any type of term here and there are no guarantees that aplying the comparison operation will be valid
         super().__init__()
         self.variable = variable
         self.threshold = threshold
         self.comparison = comparison
+        self.inNext = inNext # Wether the construct is in the Next definition or not, aka, if we need to split Next
+        self.trace = trace
         
     def __repr__(self):
         return f"{repr(self.variable)} {self.comparison.get_symbol(self.comparison)} BYZANTINE {self.threshold}"
     
+    def preCompile(self, spec):
+        """
+        Pre-compilation applies changes to the spec without necessarily returning new objects
+        """
+        
+        console = Console()
+        console.print("[yellow]Precompiling for Byzantine Comparison...")
+        
+        if not self.inNext or self.trace is None:
+            console.print("[green]Precompiling for Byzantine Comparison Done!")
+            return 
+        
+        spec.precompilationSplitNextFairness(self.trace)
+        
+        console.print("[green]Precompiling for Byzantine Comparison Done!")
+    
     def compile(self, spec: Spec):
+        console = Console()
+        console.print("[yellow]Compiling for Byzantine Comparison...")
         self.__check_syntax(spec)
         x = Alias("x", None)
         MaxByzantineNodes = Alias("MaxByzantineNodes", None)
@@ -75,6 +98,14 @@ class ByzantineComparison(TLAPlusPlusTerm):
         if not ok:
             raise ValueError("The constant MaxByzantineNodes must be defined in the spec.")
         
+    def changeAliasTo(self, old: str, new: str):
+        """
+        Change an alias inside the temporal predicate to a new one.
+        """
+        self.variable.changeAliasTo(old, new)
+        self.threshold.changeAliasTo(old, new)
+        
+        
 class ByzantineLeader(TLAPlusPlusTerm):
     """
     Used to simulate a leader in a protocol that may or may not have byzantine behaviour.
@@ -95,11 +126,11 @@ class ByzantineLeader(TLAPlusPlusTerm):
     
         VARIABLES king
 
-        TypeOK == /\ ...
+        TypeOK == /\\ ...
 					...
-					/\ king \in (<Original Set> \cup {"byzantine"})
+					/\\ king \\in (<Original Set> \\cup {"byzantine"})
 					
-        leaderIsByzantine == king \in {"byzantine"}
+        leaderIsByzantine == king \\in {"byzantine"}
 
         ...
         
@@ -111,7 +142,7 @@ class ByzantineLeader(TLAPlusPlusTerm):
 
         Init == /\\ ...
                         ...
-                        /\\ king \in (<Original Set> \cup {"byzantine"})
+                        /\\ king \\in (<Original Set> \\cup {"byzantine"})
     """
     
     def __init__(self, hon_behaviour: typing.Union[Predicate, Clause], byz_behaviour: typing.Union[Predicate, Clause]):
@@ -119,14 +150,64 @@ class ByzantineLeader(TLAPlusPlusTerm):
         self.byz_behaviour = byz_behaviour
         
     def __repr__(self):
-        return f"HONEST LEADER {repr(self.hon_behaviour)} /\ BYZANTINE LEADER {repr(self.byz_behaviour)}"
+        return f"HONEST LEADER {repr(self.hon_behaviour)} /\\ BYZANTINE LEADER {repr(self.byz_behaviour)}"
     
-    def compile(self, spec: Spec):
+    def preCompile(self, spec: Spec):
+        """
+        Make changes to the original Spec before compiling it. This method helps minimize recursive calls.
+        """
+    
+        console = Console()
+        console.print("[yellow]Precompiling for Byzantine Leader...")
+        
+        # TODO: Fix, currently changes are being applied twice, whoopsie
+        
         self.__check_syntax(spec)
         
-        # TODO: make a different version where leaderIsByzantine doesn't exist, and we just add one more state ("byzantine") to the states from king
         king = Variable("king")
         
+        def change_king_definition(king: Variable, definition: Definition):
+            
+            if definition is None:
+                raise ValueError(f"The {definition.get_name()} definition must be defined in the spec.")
+                
+            # Compile
+            # definition = definition.compile(spec)
+            # Case where king is the only variable
+            if isinstance(definition.value, In):
+                definition.value = Conjunction([definition.value])
+            # Make sure the definition is a conjunction, otherwise, the king's state space won't be updated
+            if not isinstance(definition.value, Conjunction):
+                console.print(f"[red]⚠️ The [bold]{definition.get_name()}[/bold] definition is not a conjunction nor an \\in statement. No updates will be made to the king's state space.")
+                return
+            
+            con = definition.value
+            changedKing= False
+                
+            for i, l in enumerate(con.literals):
+                if isinstance(l, In) and repr(l.left) == repr(king):
+                    con.literals[i] = In(
+                            left=king,
+                            right=Union(l.right, Set([String("byzantine")]))
+                        )
+                    changedKing = True
+                    
+            if changedKing:
+                console.print(f"[green]✅ Updated the king's state space in the definition [bold]{definition.get_name()}[/bold].")
+            else: 
+                console.print(f"[red]⚠️ The [bold]{definition.get_name()}[/bold] definition didn't contain the variable [bold]king[/bold] inside a statement like [italic]king ∈ SET[/italic]. No changes made.")
+
+
+            definition.set_value(con)
+            # Add the new Init to the spec
+            spec.update(definition)
+            
+        # Get all defs from the spec
+        defs = spec.get_definitions()
+        
+        for d in defs:
+            change_king_definition(king, d)
+            
         # leaderIsByzantine == king \in {"byzantine"}
         leaderIsByzantine = Definition(
             name="leaderIsByzantine",
@@ -136,42 +217,14 @@ class ByzantineLeader(TLAPlusPlusTerm):
             )
             
         )
-        spec.update_later(leaderIsByzantine)
-        
-        def change_king_definition(king: Variable, definition: Definition):
+        spec.update(leaderIsByzantine)
             
-            if definition is None:
-                raise ValueError(f"The {definition.get_name()} definition must be defined in the spec.")
-                
-            # Compile Init
-            definition = definition.compile(spec)
-            if not isinstance(definition.value, Conjunction):
-                raise ValueError(f"The {definition.get_name()} definition must be a conjunction.")
-            
-            con = definition.value
-            changedKing= False
-            # Find where king is defined in the Init definition
-            for i, l in enumerate(con.literals):
-                if isinstance(l, In) and repr(l.left) == repr(king):
-                    con.literals[i] = In(
-                            left=king,
-                            right=Union(l.right, Set([String("byzantine")]))
-                        )
-                    changedKing = True
-                    
-            if not changedKing:
-                raise ValueError(f"The {definition.get_name()} definition must contain the variable king inside a statement of the form king \\in SET.")
-
-            definition.set_value(con)
-            # Add the new Init to the spec
-            spec.update_later(definition)
-            
+        console.print("[green]Precompiling for Byzantine Leader Done!")
+    
+    def compile(self, spec: Spec):
         
-        # TypeOK is changed to accomodate for byzantine nodes
-        change_king_definition(king, spec.get_typeok())
-        
-        # Init is changed to accomodate for byzantine nodes
-        change_king_definition(king, spec.get_init())
+        console = Console()
+        console.print("[yellow]Compiling for Byzantine Leader...")
         
         return Conjunction([
             Implication(
@@ -206,3 +259,12 @@ class ByzantineLeader(TLAPlusPlusTerm):
                 break
         if not ok_leader:
             raise ValueError("The variable king must be defined in the spec.")
+        
+    def changeAliasTo(self, old: str, new: str):
+        """
+        Change an alias inside the temporal predicate to a new one.
+        """
+        self.hon_behaviour.changeAliasTo(old, new)
+        self.byz_behaviour.changeAliasTo(old, new)
+        
+    

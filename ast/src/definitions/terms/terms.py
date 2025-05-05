@@ -48,11 +48,24 @@ class Term(AbstractTerm):
     def __le__(self, value):
         return GreaterThanEquals(value, self)
     
+    def preCompile(self, spec):
+        """
+        Pre-compilation applies changes to the spec without necessarily returning new objects
+        """
+        raise NotImplementedError("This method should be implemented in subclasses.")
+    
     def compile(self, spec):
         """
         Transforms the term into a valid TLA+ term.
         """
         raise NotImplementedError("This method should be implemented in subclasses.")
+    
+    def changeAliasTo(self, old: str, new: str):
+        """
+        Change an alias inside the term to a new one.
+        """
+        pass
+    
 
 
 class Scalar(Term):
@@ -69,6 +82,12 @@ class Scalar(Term):
 
     def __repr__(self):
         return f"{self.value}"
+    
+    def preCompile(self, spec):
+        """
+        Pre-compilation applies changes to the spec without necessarily returning new objects
+        """
+        pass
     
     def compile(self, spec):
         return self
@@ -88,6 +107,18 @@ class Variable(Term):
 
     def __repr__(self):
         return f"{self.name}"
+    
+    def preCompile(self, spec):
+        """
+        Pre-compilation applies changes to the spec without necessarily returning new objects
+        """
+        pass
+    
+    def preCompile(self, spec):
+        """
+        Pre-compilation applies changes to the spec without necessarily returning new objects
+        """
+        pass
     
     def compile(self, spec):
         return self
@@ -114,6 +145,12 @@ class Constant(Term):
         """
         return self.name
     
+    def preCompile(self, spec):
+        """
+        Pre-compilation applies changes to the spec without necessarily returning new objects
+        """
+        pass
+    
     def compile(self, spec):
         return self
     
@@ -131,6 +168,12 @@ class String(Term):
 
     def __repr__(self):
         return f'"{self.value}"'
+    
+    def preCompile(self, spec):
+        """
+        Pre-compilation applies changes to the spec without necessarily returning new objects
+        """
+        pass
     
     def compile(self, spec):
         return self
@@ -155,8 +198,23 @@ class Alias(Term):
             return f"{self.name}({', '.join(repr(a) for a in self.arguments)})"
         return f"{self.name}"
     
+    def preCompile(self, spec):
+        """
+        Pre-compilation applies changes to the spec without necessarily returning new objects
+        """
+        pass
+    
     def compile(self, spec):
         return self
+    
+    def changeAliasTo(self, old: str, new: str):
+        """
+        Change an alias inside the term to a new one.
+        """
+        if self.name == old:
+            self.name = new
+        for i in range(len(self.arguments)):
+            self.arguments[i].changeAliasTo(old, new)
     
 class Function(Term):
     """
@@ -181,8 +239,20 @@ class Unchanged(Term):
     def __repr__(self):
         return f"UNCHANGED {repr(self.var)}"
     
+    def preCompile(self, spec):
+        """
+        Pre-compilation applies changes to the spec without necessarily returning new objects
+        """
+        self.var.preCompile(spec)
+    
     def compile(self, spec):
         return Unchanged(self.var.compile(spec))
+    
+    def changeAliasTo(self, old: str, new: str):
+        """
+        Change an alias inside the term to a new one.
+        """
+        self.var.changeAliasTo(old, new)
     
 class Choose(Term):
     """
@@ -203,8 +273,26 @@ class Choose(Term):
     def __repr__(self):
         return f"CHOOSE {repr(self.var)} \\in {repr(self.set)}: {repr(self.predicate)}"
     
+    def preCompile(self, spec):
+        """
+        Pre-compilation applies changes to the spec without necessarily returning new objects
+        """
+        self.var.preCompile(spec)
+        self.set.preCompile(spec)
+        self.predicate.preCompile(spec)
+    
     def compile(self, spec):
         return Choose(self.var.compile(spec), self.set.compile(spec), self.predicate.compile(spec))
+    
+    def changeAliasTo(self, old: str, new: str):
+        """
+        Change an alias inside the term to a new one.
+        """
+        self.var.changeAliasTo(old, new)
+        self.set.changeAliasTo(old, new)
+        self.predicate.changeAliasTo(old, new)
+    
+    
     
 class Enabled(Term):
     """
@@ -221,8 +309,22 @@ class Enabled(Term):
     def __repr__(self):
         return f"ENABLED {repr(self.var)}"
     
+    def preCompile(self, spec):
+        """
+        Pre-compilation applies changes to the spec without necessarily returning new objects
+        """
+        self.var.preCompile(spec)
+    
     def compile(self, spec):
         return Enabled(self.var.compile(spec))
+    
+    def changeAliasTo(self, old: str, new: str):
+        """
+        Change an alias inside the term to a new one.
+        """
+        self.var.changeAliasTo(old, new)
+    
+    
     
 class Range(Term):
     """
@@ -241,8 +343,24 @@ class Range(Term):
     def __repr__(self):
         return f"{repr(self.start)}..{repr(self.end)}"
     
+    def preCompile(self, spec):
+        """
+        Pre-compilation applies changes to the spec without necessarily returning new objects
+        """
+        self.start.preCompile(spec)
+        self.end.preCompile(spec)
+    
     def compile(self, spec):
         return Range(self.start.compile(spec), self.end.compile(spec))
+    
+    def changeAliasTo(self, old: str, new: str):
+        """
+        Change an alias inside the term to a new one.
+        """
+        self.start.changeAliasTo(old, new)
+        self.end.changeAliasTo(old, new)
+    
+    
     
 """ Arithmetic operations """
 
@@ -256,8 +374,23 @@ class BinaryArithmeticOp(Function):
     def __repr__(self):
         return f"({repr(self.a)} {self.symbol} {repr(self.b)})"
 
+    def preCompile(self, spec):
+        """
+        Pre-compilation applies changes to the spec without necessarily returning new objects
+        """
+        self.a.preCompile(spec)
+        self.b.preCompile(spec)
+
     def compile(self, spec):
         return BinaryArithmeticOp(self.a.compile(spec), self.b.compile(spec), self.symbol)
+    
+    def changeAliasTo(self, old: str, new: str):
+        """
+        Change an alias inside the term to a new one.
+        """
+        self.a.changeAliasTo(old, new)
+        self.b.changeAliasTo(old, new)
+    
 
 class Addition(BinaryArithmeticOp):
     """ Intermediate AST nodes representing addition """

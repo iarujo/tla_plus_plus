@@ -22,6 +22,7 @@ class Clause:
     def __init__(self):
         pass
     
+    
 class Conjunction(Clause):
     
     """ A conjunction of literals """
@@ -35,6 +36,13 @@ class Conjunction(Clause):
     
     def add_literal(self, literal: Predicate):
         self.literals = self.literals.append(literal)
+        
+    def preCompile(self, spec):
+        """
+        Pre-compilation applies changes to the spec without necessarily returning new objects
+        """
+        for l in self.literals:
+            l.preCompile(spec)
     
     def compile(self, spec):
         """
@@ -43,6 +51,19 @@ class Conjunction(Clause):
         return Conjunction(
             [l.compile(spec) for l in self.literals]
         )
+    
+    def isByzComparison(self):
+        """
+        Returns True if the term is a Byzantine comparison, False otherwise.
+        """
+        return any(l.isByzComparison() for l in self.literals)
+    
+    def changeAliasTo(self, old: str, new: str):
+        """
+        Change an alias inside the clause to a new one.
+        """
+        for l in self.literals:
+            l.changeAliasTo(old, new)
     
 class Disjunction(Clause):
     
@@ -57,6 +78,13 @@ class Disjunction(Clause):
     
     def add_literal(self, literal: Predicate):
         self.literals = self.literals.append(literal)
+        
+    def preCompile(self, spec):
+        """
+        Pre-compilation applies changes to the spec without necessarily returning new objects
+        """
+        for l in self.literals:
+            l.preCompile(spec)
     
     def compile(self, spec):
         """
@@ -65,6 +93,19 @@ class Disjunction(Clause):
         return Disjunction(
             [l.compile(spec) for l in self.literals]
         )
+        
+    def isByzComparison(self):
+        """
+        Returns True if the term is a Byzantine comparison, False otherwise.
+        """
+        return any(l.isByzComparison() for l in self.literals)
+    
+    def changeAliasTo(self, old: str, new: str):
+        """
+        Change an alias inside the clause to a new one.
+        """
+        for l in self.literals:
+            l.changeAliasTo(old, new)
     
 class Implication(Clause):
     
@@ -77,6 +118,13 @@ class Implication(Clause):
     def __repr__(self):
         return f"({self.p.__repr__()} => {self.q.__repr__()})"  
     
+    def preCompile(self, spec):
+        """
+        Pre-compilation applies changes to the spec without necessarily returning new objects
+        """
+        self.p.preCompile(spec)
+        self.q.preCompile(spec)
+    
     def compile(self, spec):
         """
         Compile this clause into a valid TLA+ specification.
@@ -85,4 +133,17 @@ class Implication(Clause):
             self.p.compile(spec), 
             self.q.compile(spec)
         ) 
+        
+    def isByzComparison(self):
+        """
+        Returns True if the term is a Byzantine comparison, False otherwise.
+        """
+        return self.p.isByzComparison() or self.q.isByzComparison()
+    
+    def changeAliasTo(self, old: str, new: str):
+        """
+        Change an alias inside the clause to a new one.
+        """
+        self.p.changeAliasTo(old, new)
+        self.q.changeAliasTo(old, new)
  

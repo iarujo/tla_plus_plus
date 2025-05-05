@@ -12,6 +12,11 @@ class Assume:
     def __repr__(self):
         return f"ASSUME {self.name} == {self.expr.__repr__()}"
     
+    def preCompile(self, spec):
+        """
+        Pre-compilation applies changes to the spec without necessarily returning new objects
+        """
+        self.expr.preCompile(spec)
     
     def compile(self, spec):
         """

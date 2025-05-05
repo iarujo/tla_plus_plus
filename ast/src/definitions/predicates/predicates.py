@@ -7,7 +7,13 @@ class Predicate:
     """
     
     def __init__(self):
-        pass    
+        pass 
+    
+    def changeAliasTo(self, old: str, new: str):
+        """
+        Change an alias inside the predicate to a new one.
+        """
+        pass
     
     
 # Kind of weird to have TRUE and FALSE here, but will do for now
@@ -21,6 +27,12 @@ class TRUE:
     def __repr__(self):
         return "TRUE"
     
+    def preCompile(self, spec):
+        """
+        Pre-compilation applies changes to the spec without necessarily returning new objects
+        """
+        pass
+    
     def compile(self, spec):
         return TRUE()
     
@@ -33,6 +45,12 @@ class FALSE:
     
     def __repr__(self):
         return "FALSE"
+    
+    def preCompile(self, spec):
+        """
+        Pre-compilation applies changes to the spec without necessarily returning new objects
+        """
+        pass
     
     def compile(self, spec):
         return FALSE()
@@ -50,6 +68,15 @@ class UniversalQuantifier(Predicate):
     def __repr__(self):
         return f"(\\A {', '.join(repr(v) for v in self.variables)} \\in  {repr(self.set)}: {repr(self.predicate)})" #{"\n\t".join([f'{l}' for l in repr(self.predicate).splitlines()])}"
 
+    def preCompile(self, spec):
+        """
+        Pre-compilation applies changes to the spec without necessarily returning new objects
+        """
+        for v in self.variables:
+            v.preCompile(spec)
+        self.set.preCompile(spec)
+        self.predicate.preCompile(spec)
+
     def compile(self, spec):
         return UniversalQuantifier(
             variables=[v.compile(spec) for v in self.variables], 
@@ -57,6 +84,13 @@ class UniversalQuantifier(Predicate):
             predicate=self.predicate.compile(spec)
         )
         
+    def changeAliasTo(self, old: str, new: str):
+        """
+        Change an alias inside the predicate to a new one.
+        """
+        self.set.changeAliasTo(old, new)
+        self.value.changeAliasTo(old, new)
+    
 class ExistentialQuantifier(Predicate):
     """
     Represents the existential quantifier \\E in TLA+
@@ -71,12 +105,28 @@ class ExistentialQuantifier(Predicate):
     def __repr__(self):
         return f"(\\E {', '.join(repr(v) for v in self.variables)} \\in {repr(self.set)}: {repr(self.predicate)})" # {"\n\t".join([f'{l}' for l in repr(self.predicate).splitlines()])}"
     
+    def preCompile(self, spec):
+        """
+        Pre-compilation applies changes to the spec without necessarily returning new objects
+        """
+        for v in self.variables:
+            v.preCompile(spec)
+        self.set.preCompile(spec)
+        self.predicate.preCompile(spec)
+    
     def compile(self, spec):
         return ExistentialQuantifier(
             variables=[v.compile(spec) for v in self.variables], 
             set=self.set.compile(spec), 
             predicate=self.predicate.compile(spec)
         )
+    
+    def changeAliasTo(self, old: str, new: str):
+        """
+        Change an alias inside the predicate to a new one.
+        """
+        self.set.changeAliasTo(old, new)
+        self.predicate.changeAliasTo(old, new)
   
 class Not(Predicate):
     """
@@ -89,8 +139,20 @@ class Not(Predicate):
     def __repr__(self):
         return f"~({repr(self.predicate)})"  
     
+    def preCompile(self, spec):
+        """
+        Pre-compilation applies changes to the spec without necessarily returning new objects
+        """
+        self.predicate.preCompile(spec)
+    
     def compile(self, spec):
         return Not(self.predicate.compile(spec))
+    
+    def changeAliasTo(self, old: str, new: str):
+        """
+        Change an alias inside the predicate to a new one.
+        """
+        self.predicate.changeAliasTo(old, new)
     
 class In(Predicate):
     """ 
@@ -104,8 +166,22 @@ class In(Predicate):
     def __repr__(self):
         return f"{self.left} \\in {self.right}"
     
+    def preCompile(self, spec):
+        """
+        Pre-compilation applies changes to the spec without necessarily returning new objects
+        """
+        self.left.preCompile(spec)
+        self.right.preCompile(spec)
+    
     def compile(self, spec):
         return In(self.left.compile(spec), self.right.compile(spec))
+    
+    def changeAliasTo(self, old: str, new: str):
+        """
+        Change an alias inside the predicate to a new one.
+        """
+        self.left.changeAliasTo(old, new)
+        self.right.changeAliasTo(old, new)
   
 class SubsetEquals(Predicate):
     """
@@ -119,8 +195,22 @@ class SubsetEquals(Predicate):
     def __repr__(self):
         return f"(({self.left}) \\subseteq ({self.right}))"
     
+    def preCompile(self, spec):
+        """
+        Pre-compilation applies changes to the spec without necessarily returning new objects
+        """
+        self.left.preCompile(spec)
+        self.right.preCompile(spec)
+    
     def compile(self, spec):
         return SubsetEquals(self.left.compile(spec), self.right.compile(spec))
+    
+    def changeAliasTo(self, old: str, new: str):
+        """
+        Change an alias inside the predicate to a new one.
+        """
+        self.left.changeAliasTo(old, new)
+        self.right.changeAliasTo(old, new)
     
 class ArithmeticComparison(Predicate):
     """
@@ -138,12 +228,26 @@ class ArithmeticComparison(Predicate):
     def get_symbol(self):
         raise NotImplementedError("This method should be implemented in subclasses")
     
+    def preCompile(self, spec):
+        """
+        Pre-compilation applies changes to the spec without necessarily returning new objects
+        """
+        self.left.preCompile(spec)
+        self.right.preCompile(spec)
+    
     def compile(self, spec):
         return ArithmeticComparison(
             left=self.left.compile(spec), 
             right=self.right.compile(spec), 
             symbol=self.symbol
         )
+
+    def changeAliasTo(self, old: str, new: str):
+        """
+        Change an alias inside the predicate to a new one.
+        """
+        self.left.changeAliasTo(old, new)
+        self.right.changeAliasTo(old, new)
   
 class Equals(ArithmeticComparison):
     

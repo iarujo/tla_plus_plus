@@ -2,6 +2,7 @@ from typing import List, Optional, Union
 from src.definitions.clause.clause import Clause
 from src.definitions.predicates.predicates import Predicate
 from src.definitions.terms.terms import Term
+import copy
 
 class Definition():
     
@@ -18,6 +19,16 @@ class Definition():
         """
         return self.name
     
+    def with_set_name(self, new_name: str):
+        """
+        Returns the same definition with a different name.
+        """
+        return Definition(
+            name=new_name,
+            value=copy.deepcopy(self.value),
+            arguments=copy.deepcopy(self.arguments)
+        )
+    
     def set_value(self, value: Union[Clause, Predicate, Term]):
         """
         Sets the value of the definition.
@@ -29,6 +40,12 @@ class Definition():
             return f"{self.name}({', '.join(repr(a) for a in self.arguments)}) == {self.value.__repr__()}"
         return f"{self.name} == {self.value.__repr__()}"
     
+    def preCompile(self, spec):
+        """
+        Pre-compilation applies changes to the spec without necessarily returning new objects
+        """
+        self.value.preCompile(spec)
+    
     def compile(self, spec):
         """
         Transforms the definition into a valid TLA+ definition.
@@ -38,3 +55,9 @@ class Definition():
             value=self.value.compile(spec),
             arguments=self.arguments
         )
+        
+    def changeAliasTo(self, old: str, new: str):
+        """
+        Change an alias inside the predicate to a new one.
+        """
+        self.value.changeAliasTo(old, new)
