@@ -53,6 +53,9 @@ class Box(TemporalOperator):
     def compile(self, spec):
         return Box(self.term.compile(spec))
     
+    def byzComparisonToNormal(self, spec):
+        return Box(self.term.byzComparisonToNormal(spec))
+    
     def isByzComparison(self):
         """
         Returns True if the term is a Byzantine comparison, False otherwise.
@@ -84,6 +87,9 @@ class Diamond(TemporalOperator):
     
     def compile(self, spec):
         return Diamond(self.term.compile(spec))
+    
+    def byzComparisonToNormal(self, spec):
+        return Diamond(self.term.byzComparisonToNormal(spec))
     
     def isByzComparison(self):
         """
@@ -120,6 +126,9 @@ class FrameCondition(TemporalOperator):
     def compile(self, spec):
         return FrameCondition(self.action.compile(spec), [v.compile(spec) for v in self.variables])
     
+    def byzComparisonToNormal(self, spec):
+        return FrameCondition(self.action.byzComparisonToNormal(spec), [v.byzComparisonToNormal(spec) for v in self.variables])
+    
     def isByzComparison(self):
         """
         Returns True if the term is a Byzantine comparison, False otherwise.
@@ -146,16 +155,23 @@ class WeakFairness(TemporalOperator):
     def __repr__(self):
         return f"WF_<<{', '.join(repr(v) for v in self.variables)}>>({self.action})"
     
+    def set_action(self, action: Term):
+        """
+        Set the action of the WeakFairness term.
+        """
+        self.action = action
+    
     def preCompile(self, spec):
         """
         Pre-compilation applies changes to the spec without necessarily returning new objects
         """
-        self.action.preCompile(spec)
-        for v in self.variables:
-            v.preCompile(spec)
+        pass
     
     def compile(self, spec):
-        return WeakFairness(self.action.compile(spec), [v.compile(spec) for v in self.variables])
+        return self
+    
+    def byzComparisonToNormal(self, spec):
+        return WeakFairness(self.action.byzComparisonToNormal(spec), [v.byzComparisonToNormal(spec) for v in self.variables])
     
     def isByzComparison(self):
         """

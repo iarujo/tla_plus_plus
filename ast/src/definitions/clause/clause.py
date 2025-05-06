@@ -6,6 +6,7 @@ Elements for the AST representation of clauses or logical formulas.
 
 from typing import List, Union
 from src.definitions.predicates.predicates import Predicate
+from copy import deepcopy
 
 class Clause:
     """
@@ -28,14 +29,28 @@ class Conjunction(Clause):
     """ A conjunction of literals """
     
     def __init__(self, literals: List[Union[Predicate, Clause]]):
+        if literals is None:
+            raise ValueError("literals cannot be None")
         self.literals = literals
         
     def __repr__(self):
         lit = ["\n\t".join(repr(l).splitlines()) for l in self.literals]
         return '(' + ' /\\ '.join(lit) + ')'
     
+    def getLiterals(self):
+        """
+        Returns the literals in the conjunction.
+        """
+        return deepcopy(self.literals)
+    
     def add_literal(self, literal: Predicate):
-        self.literals = self.literals.append(literal)
+        self.literals.append(literal)
+        
+    def remove_literal(self, literal: Predicate):
+        """
+        Removes a literal from the conjunction.
+        """
+        self.literals = [l for l in self.literals if l != literal]
         
     def preCompile(self, spec):
         """
@@ -50,6 +65,14 @@ class Conjunction(Clause):
         """
         return Conjunction(
             [l.compile(spec) for l in self.literals]
+        )
+        
+    def byzComparisonToNormal(self, spec):
+        """
+        Convert Byzantine comparisons to normal comparisons.
+        """
+        return Conjunction(
+            [l.byzComparisonToNormal(spec) for l in self.literals]
         )
     
     def isByzComparison(self):
@@ -76,8 +99,20 @@ class Disjunction(Clause):
         lit = ["\n\t".join(repr(l).splitlines()) for l in self.literals]
         return '(' + " \\/ ".join(lit) + ')'
     
+    def getLiterals(self):
+        """
+        Returns the literals in the conjunction.
+        """
+        return deepcopy(self.literals)
+    
     def add_literal(self, literal: Predicate):
-        self.literals = self.literals.append(literal)
+        self.literals.append(literal)
+        
+    def remove_literal(self, literal: Predicate):
+        """
+        Removes a literal from the conjunction.
+        """
+        self.literals = [l for l in self.literals if l != literal]
         
     def preCompile(self, spec):
         """
@@ -92,6 +127,14 @@ class Disjunction(Clause):
         """
         return Disjunction(
             [l.compile(spec) for l in self.literals]
+        )
+        
+    def byzComparisonToNormal(self, spec):
+        """
+        Convert Byzantine comparisons to normal comparisons.
+        """
+        return Disjunction(
+            [l.byzComparisonToNormal(spec) for l in self.literals]
         )
         
     def isByzComparison(self):
@@ -132,6 +175,15 @@ class Implication(Clause):
         return Implication(
             self.p.compile(spec), 
             self.q.compile(spec)
+        ) 
+        
+    def byzComparisonToNormal(self, spec):
+        """
+        Convert Byzantine comparisons to normal comparisons.
+        """
+        return Implication(
+            self.p.byzComparisonToNormal(spec), 
+            self.q.byzComparisonToNormal(spec)
         ) 
         
     def isByzComparison(self):

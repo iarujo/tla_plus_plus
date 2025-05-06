@@ -34,6 +34,12 @@ class IndexSet(Function):
         """
         return IndexSet(self.set.compile(spec), self.index.compile(spec))
     
+    def byzComparisonToNormal(self, spec):
+        """
+        Compile the set operation into a valid TLA+ term.
+        """
+        return IndexSet(self.set.byzComparisonToNormal(spec), self.index.byzComparisonToNormal(spec))
+    
     def isByzComparison(self):
         """
         Returns True if the term is a Byzantine comparison, False otherwise.
@@ -74,6 +80,12 @@ class Subset(Function):
         """
         return Subset(self.set.compile(spec))
     
+    def byzComparisonToNormal(self, spec):
+        """
+        Compile the subset operation into a valid TLA+ term.
+        """
+        return Subset(self.set.byzComparisonToNormal(spec))
+    
     def isByzComparison(self):
         """
         Returns True if the term is a Byzantine comparison, False otherwise.
@@ -110,6 +122,12 @@ class Set(Function):
         Compile the set operation into a valid TLA+ term.
         """
         return Set([e.compile(spec) for e in self.elems])
+    
+    def byzComparisonToNormal(self, spec):
+        """
+        Compile the set operation into a valid TLA+ term.
+        """
+        return Set([e.byzComparisonToNormal(spec) for e in self.elems])
     
     def isByzComparison(self):
         """
@@ -157,6 +175,12 @@ class SetOf(Function):
         """
         return SetOf(self.var.compile(spec), self.set.compile(spec), self.predicate.compile(spec))
     
+    def byzComparisonToNormal(self, spec):
+        """
+        Compile the set operation into a valid TLA+ term.
+        """
+        return SetOf(self.var.byzComparisonToNormal(spec), self.set.byzComparisonToNormal(spec), self.predicate.byzComparisonToNormal(spec))
+    
     def isByzComparison(self):
         """
         Returns True if the term is a Byzantine comparison, False otherwise.
@@ -200,6 +224,12 @@ class SetFrom(Function):
         Compile the set operation into a valid TLA+ term.
         """
         return SetFrom(self.var.compile(spec), self.predicate.compile(spec))
+    
+    def byzComparisonToNormal(self, spec):
+        """
+        Compile the set operation into a valid TLA+ term.
+        """
+        return SetFrom(self.var.byzComparisonToNormal(spec), self.predicate.byzComparisonToNormal(spec))
     
     def isByzComparison(self):
         """
@@ -247,6 +277,12 @@ class SetExcept(Function):
         """
         return SetExcept(self.set.compile(spec), self.index.compile(spec), self.value.compile(spec))
     
+    def byzComparisonToNormal(self, spec):
+        """
+        Compile the set operation into a valid TLA+ term.
+        """
+        return SetExcept(self.set.byzComparisonToNormal(spec), self.index.byzComparisonToNormal(spec), self.value.byzComparisonToNormal(spec))
+    
     def isByzComparison(self):
         """
         Returns True if the term is a Byzantine comparison, False otherwise.
@@ -287,6 +323,12 @@ class Cardinality(Function):
         Compile the cardinality operation into a valid TLA+ term.
         """
         return Cardinality(self.set.compile(spec))
+    
+    def byzComparisonToNormal(self, spec):
+        """
+        Compile the cardinality operation into a valid TLA+ term.
+        """
+        return Cardinality(self.set.byzComparisonToNormal(spec))
     
     def isByzComparison(self):
         """
@@ -333,6 +375,12 @@ class Union(Function):
         """
         return Union(self.a.compile(spec), self.b.compile(spec))
     
+    def byzComparisonToNormal(self, spec):
+        """
+        Compile the union operation into a valid TLA+ term.
+        """
+        return Union(self.a.byzComparisonToNormal(spec), self.b.byzComparisonToNormal(spec))
+    
     def isByzComparison(self):
         """
         Returns True if the term is a Byzantine comparison, False otherwise.
@@ -378,6 +426,12 @@ class Intersection(Function):
         Compile the intersection operation into a valid TLA+ term.
         """
         return Intersection(self.a.compile(spec), self.b.compile(spec))
+    
+    def byzComparisonToNormal(self, spec):
+        """
+        Compile the intersection operation into a valid TLA+ term.
+        """
+        return Intersection(self.a.byzComparisonToNormal(spec), self.b.byzComparisonToNormal(spec))
     
     def isByzComparison(self):
         """

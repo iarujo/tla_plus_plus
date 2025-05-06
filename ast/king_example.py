@@ -149,7 +149,7 @@ def king_ast():
             name="AgreedValues", 
             arguments=[
                 String("propose"),
-                F + 1
+                F + Scalar(1)
             ]
         ),
     )
@@ -366,7 +366,7 @@ def king_ast_byzantine():
                 variables=[Q],
                 set=Subset(Acceptors),
                 predicate=Conjunction([
-                    ByzantineComparison(Cardinality(Q), GreaterThanEquals ,threshold, True, [["AgreedValues", "BroadcastAgreedValues", "RoundTwo", "Next"], ["AgreedValues", "ProposeAgreedValues", "RoundTwo", "Next"]]), # Add byzantine comparison here
+                    ByzantineComparison(Cardinality(Q), GreaterThanEquals ,threshold, True, [["AgreedValues", "BroadcastAgreedValues", "RoundTwo", "Next"], ["AgreedValues", "ProposeAgreedValues", "RoundTwo", "Next"], ["AgreedValues", "RoundThree", "Next"]]), # Add byzantine comparison here
                     UniversalQuantifier(
                         variables=[a1],
                         set=Q,
@@ -401,7 +401,7 @@ def king_ast_byzantine():
             name="AgreedValues", 
             arguments=[
                 String("propose"),
-                F + 1
+                F + Scalar(1)
             ]
         ),
     )

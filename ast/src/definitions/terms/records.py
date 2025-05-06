@@ -36,6 +36,12 @@ class Record(Term):
         """
         return Record(self.fields, [t.compile(spec) for t in self.types])
     
+    def byzComparisonToNormal(self, spec):
+        """
+        Compile this record into a valid TLA+ record.
+        """
+        return Record(self.fields, [t.byzComparisonToNormal(spec) for t in self.types])
+    
     def isByzComparison(self):
         """
         Returns True if the term is a Byzantine comparison, False otherwise.
@@ -81,6 +87,12 @@ class RecordInstance(Term):
         Compile this record instance into a valid TLA+ record instance.
         """
         return RecordInstance(self.fields, [v.compile(spec) for v in self.vals])
+    
+    def byzComparisonToNormal(self, spec):
+        """
+        Compile this record instance into a valid TLA+ record instance.
+        """
+        return RecordInstance(self.fields, [v.byzComparisonToNormal(spec) for v in self.vals])
     
     def isByzComparison(self):
         """
@@ -129,6 +141,12 @@ class Mapping(Term):
         Compile this mapping into a valid TLA+ mapping.
         """
         return Mapping([v.compile(spec) for v in self.vals], [f.compile(spec) for f in self.funs])
+    
+    def byzComparisonToNormal(self, spec):
+        """
+        Compile this mapping into a valid TLA+ mapping.
+        """
+        return Mapping([v.byzComparisonToNormal(spec) for v in self.vals], [f.byzComparisonToNormal(spec) for f in self.funs])
     
     def isByzComparison(self):
         """

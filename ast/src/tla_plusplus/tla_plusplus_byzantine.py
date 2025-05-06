@@ -71,6 +71,13 @@ class ByzantineComparison(TLAPlusPlusTerm):
                 self.threshold - x
             )
         )
+        
+    def byzComparisonToNormal(self, spec: Spec):
+        print("[yellow]Converting Byzantine Comparison to normal...")
+        return self.comparison(
+            self.variable,
+            self.threshold
+        )
     
     def __check_syntax(self, spec: Spec):
         """
@@ -236,6 +243,13 @@ class ByzantineLeader(TLAPlusPlusTerm):
                 q=self.byz_behaviour.compile(spec)
             )
         ])
+        
+    def byzComparisonToNormal(self, spec: Spec):
+        
+        return ByzantineLeader(
+            hon_behaviour=self.hon_behaviour.byzComparisonToNormal(spec),
+            byz_behaviour=self.byz_behaviour.byzComparisonToNormal(spec)
+        )
         
     def __check_syntax(self, spec: Spec):
         """

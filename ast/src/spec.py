@@ -15,6 +15,7 @@ from src.constants.constants import Constants
 from src.definitions.terms.terms import Variable, Alias
 from src.assume.assume import Assume
 from src.variables.variables import Variables
+from src.definitions.temporal import WeakFairness
 
 class Spec:
     
@@ -121,37 +122,34 @@ class Spec:
             """
             Splits a trace into two traces: one for the fair transitions and one for the unfair transitions.
             """
+            defOriginal = None
             defFair = None
             defUnfair = None            
             
             # See if the definition at the head of the trace has been split yet
             notSplit = False
-            hasFair = False
-            hasUnfair = False
             for d in self.defs:
                 if d.get_name() == trace[-1]:
                     notSplit = True
-                    defFair = d
+                    defOriginal = d
                 if d.get_name() == trace[-1] + "_Fair":
-                    hasFair = True
                     defFair = d
                 if d.get_name() == trace[-1] + "_Unfair":
-                    hasUnfair = True
                     defUnfair = d
+                    
+            notSplit = notSplit and defOriginal is not None and defUnfair is None
             
+            # If it hasn't been split, split it
             if notSplit:
-            
-                if (hasFair or hasUnfair):
-                    raise Exception(f"Trace spec is not valid, as it contains the definitions {trace[-1]} and {trace[-1]}_Fair or {trace[-1]}_Unfair at the same time")
+                print("Splitting definition", trace[-1])
                 
-                # If it hasn't been split, split it
                 index = next((i for i, d in enumerate(self.defs) if d.get_name() == trace[-1]), None)
                 if index is None:
                     raise Exception(f"Definition with name {trace[-1]} not found in self.defs")
                 self.defs = [x for x in self.defs if x.get_name() != trace[-1]]
                 
-                defFair = defFair.with_set_name(trace[-1] + "_Fair")
-                defUnfair = defFair.with_set_name(trace[-1] + "_Unfair")
+                defFair = defOriginal.with_set_name(trace[-1] + "_Fair")
+                defUnfair = defOriginal.with_set_name(trace[-1] + "_Unfair")
                 
                  # If we're dealing with Next, add another definition for the conjunction of the fair and unfair versions
                 if trace[-1] == "Next":
@@ -166,15 +164,44 @@ class Spec:
         
             # If this definition calls yet another definition, make sure each of the fair/unfair functions call the right definition, then recurse
             if len(trace) > 1:
+                print("Recursing into definition", trace[-2])
                 defFair.changeAliasTo(trace[-2], f'{trace[-2]}_Fair')
                 defUnfair.changeAliasTo(trace[-2], f'{trace[-2]}_Unfair')
+                self.update(defFair)
+                self.update(defUnfair)
                 # Recursion
                 splitFairnessTrace(trace[:-1])
             
             else:
-                pass
-            # Otherwise, make sure to place the regular comparison and byzantine comparison correctly
-            
+                # Otherwise, make sure to place the regular comparison and byzantine comparison correctly
+                print("Updating definition", trace[-1])
+                defFair = defFair.byzComparisonToNormal(self) # Have a regular comparison in the fair trace, and a byzantine one in the unfair trace
+                self.update(defFair)
+                
+                # Finally, check if there's any Weak Fairness Properties for Next in the spec, and add them if they aren't present
+                for d in self.defs:
+                    if d.get_name() == "Spec":
+                        
+                        print("Updating Weak Fairness Properties")
+                        
+                        if not isinstance(d.value, Conjunction):
+                            raise Exception(f"Spec definition is not a conjunction, cannot continue with compilation")
+
+                        # WF for Next is defined, remove it
+                        wf_next = [c for c in d.value.literals if isinstance(c, WeakFairness) and isinstance(c.action, Alias) and c.action.name == "Next"]
+                        if len(wf_next) > 1:
+                            raise Exception(f"More than one Weak Fairness Property for Next in the spec, cannot continue with compilation")
+                        if len(wf_next) > 0:
+                            print("Removing old Next Weak Fairness Property")
+                            d.value.remove_literal(wf_next[0])
+                            self.update(d)
+                        
+                        # WF for Next not yet defined, add it
+                        if not any([isinstance(c, WeakFairness) and isinstance(c.action, Alias) and c.action.name == "Next_Fair" for c in d.value.getLiterals()]):
+                            d.value.add_literal(WeakFairness(Alias("Next_Fair", None), self.variables.get_variables()))
+                            print(d)
+                            self.update(d)
+                        
         
         for trace in traces:
             splitFairnessTrace(trace)

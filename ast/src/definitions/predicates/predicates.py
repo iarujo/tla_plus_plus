@@ -17,7 +17,7 @@ class Predicate:
     
     
 # Kind of weird to have TRUE and FALSE here, but will do for now
-class TRUE:
+class TRUE(Predicate):
     """
     Represents the TRUE constant in TLA+
     """
@@ -36,7 +36,7 @@ class TRUE:
     def compile(self, spec):
         return TRUE()
     
-class FALSE:
+class FALSE(Predicate):
     """
     Represents the FALSE constant in TLA+
     """
@@ -84,6 +84,13 @@ class UniversalQuantifier(Predicate):
             predicate=self.predicate.compile(spec)
         )
         
+    def byzComparisonToNormal(self, spec):
+        return UniversalQuantifier(
+            variables=[v.byzComparisonToNormal(spec) for v in self.variables], 
+            set=self.set.byzComparisonToNormal(spec), 
+            predicate=self.predicate.byzComparisonToNormal(spec)
+        )
+        
     def changeAliasTo(self, old: str, new: str):
         """
         Change an alias inside the predicate to a new one.
@@ -120,6 +127,13 @@ class ExistentialQuantifier(Predicate):
             set=self.set.compile(spec), 
             predicate=self.predicate.compile(spec)
         )
+        
+    def byzComparisonToNormal(self, spec):
+        return ExistentialQuantifier(
+            variables=[v.byzComparisonToNormal(spec) for v in self.variables], 
+            set=self.set.byzComparisonToNormal(spec), 
+            predicate=self.predicate.byzComparisonToNormal(spec)
+        )
     
     def changeAliasTo(self, old: str, new: str):
         """
@@ -147,6 +161,9 @@ class Not(Predicate):
     
     def compile(self, spec):
         return Not(self.predicate.compile(spec))
+    
+    def byzComparisonToNormal(self, spec):
+        return Not(self.predicate.byzComparisonToNormal(spec))
     
     def changeAliasTo(self, old: str, new: str):
         """
@@ -176,6 +193,9 @@ class In(Predicate):
     def compile(self, spec):
         return In(self.left.compile(spec), self.right.compile(spec))
     
+    def byzComparisonToNormal(self, spec):
+        return In(self.left.byzComparisonToNormal(spec), self.right.byzComparisonToNormal(spec))
+    
     def changeAliasTo(self, old: str, new: str):
         """
         Change an alias inside the predicate to a new one.
@@ -204,6 +224,9 @@ class SubsetEquals(Predicate):
     
     def compile(self, spec):
         return SubsetEquals(self.left.compile(spec), self.right.compile(spec))
+    
+    def byzComparisonToNormal(self, spec):
+        return SubsetEquals(self.left.byzComparisonToNormal(spec), self.right.byzComparisonToNormal(spec))
     
     def changeAliasTo(self, old: str, new: str):
         """
@@ -239,6 +262,13 @@ class ArithmeticComparison(Predicate):
         return ArithmeticComparison(
             left=self.left.compile(spec), 
             right=self.right.compile(spec), 
+            symbol=self.symbol
+        )
+        
+    def byzComparisonToNormal(self, spec):
+        return ArithmeticComparison(
+            left=self.left.byzComparisonToNormal(spec), 
+            right=self.right.byzComparisonToNormal(spec), 
             symbol=self.symbol
         )
 

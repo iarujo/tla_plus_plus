@@ -56,6 +56,16 @@ class Definition():
             arguments=self.arguments
         )
         
+    def byzComparisonToNormal(self, spec):
+        """
+        Transforms the definition into a valid TLA+ definition.
+        """
+        return Definition(
+            name=self.name,
+            value=self.value.byzComparisonToNormal(spec),
+            arguments=self.arguments
+        )
+        
     def changeAliasTo(self, old: str, new: str):
         """
         Change an alias inside the predicate to a new one.

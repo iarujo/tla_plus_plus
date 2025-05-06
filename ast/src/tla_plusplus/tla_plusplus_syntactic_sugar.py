@@ -65,6 +65,9 @@ class Havoc(TLAPlusPlusTerm):
             root.add_literal(small_havoc(v, z))
         return root
     
+    def byzComparisonToNormal(self, spec: Spec):
+        return self
+    
     def changeAliasTo(self, old: str, new: str):
         """
         Change an alias inside the term to a new one.
@@ -103,6 +106,9 @@ class Random(TLAPlusPlusTerm):
             set=self.set.compile(spec), 
             predicate=TRUE()
         )
+        
+    def byzComparisonToNormal(self, spec: Spec):
+        return self
         
     def changeAliasTo(self, old: str, new: str):
         """

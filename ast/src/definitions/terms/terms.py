@@ -66,6 +66,9 @@ class Term(AbstractTerm):
         """
         pass
     
+    def byzComparisonToNormal(self, spec):
+        return self
+    
 
 
 class Scalar(Term):
@@ -90,6 +93,9 @@ class Scalar(Term):
         pass
     
     def compile(self, spec):
+        return self
+    
+    def byzComparisonToNormal(self, spec):
         return self
     
     
@@ -121,6 +127,9 @@ class Variable(Term):
         pass
     
     def compile(self, spec):
+        return self
+    
+    def byzComparisonToNormal(self, spec):
         return self
     
     
@@ -248,6 +257,9 @@ class Unchanged(Term):
     def compile(self, spec):
         return Unchanged(self.var.compile(spec))
     
+    def byzComparisonToNormal(self, spec):
+        return Unchanged(self.var.byzComparisonToNormal(spec))
+    
     def changeAliasTo(self, old: str, new: str):
         """
         Change an alias inside the term to a new one.
@@ -284,6 +296,9 @@ class Choose(Term):
     def compile(self, spec):
         return Choose(self.var.compile(spec), self.set.compile(spec), self.predicate.compile(spec))
     
+    def byzComparisonToNormal(self, spec):
+        return Choose(self.var.byzComparisonToNormal(spec), self.set.byzComparisonToNormal(spec), self.predicate.byzComparisonToNormal(spec))
+    
     def changeAliasTo(self, old: str, new: str):
         """
         Change an alias inside the term to a new one.
@@ -317,6 +332,9 @@ class Enabled(Term):
     
     def compile(self, spec):
         return Enabled(self.var.compile(spec))
+    
+    def byzComparisonToNormal(self, spec):
+        return Enabled(self.var.byzComparisonToNormal(spec))
     
     def changeAliasTo(self, old: str, new: str):
         """
@@ -353,6 +371,9 @@ class Range(Term):
     def compile(self, spec):
         return Range(self.start.compile(spec), self.end.compile(spec))
     
+    def byzComparisonToNormal(self, spec):
+        return Range(self.start.byzComparisonToNormal(spec), self.end.byzComparisonToNormal(spec))
+    
     def changeAliasTo(self, old: str, new: str):
         """
         Change an alias inside the term to a new one.
@@ -383,6 +404,9 @@ class BinaryArithmeticOp(Function):
 
     def compile(self, spec):
         return BinaryArithmeticOp(self.a.compile(spec), self.b.compile(spec), self.symbol)
+    
+    def byzComparisonToNormal(self, spec):
+        return BinaryArithmeticOp(self.a.byzComparisonToNormal(spec), self.b.byzComparisonToNormal(spec), self.symbol)
     
     def changeAliasTo(self, old: str, new: str):
         """
