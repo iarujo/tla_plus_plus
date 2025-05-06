@@ -96,7 +96,7 @@ class UniversalQuantifier(Predicate):
         Change an alias inside the predicate to a new one.
         """
         self.set.changeAliasTo(old, new)
-        self.value.changeAliasTo(old, new)
+        self.predicate.changeAliasTo(old, new)
     
 class ExistentialQuantifier(Predicate):
     """

@@ -38,6 +38,46 @@ This repository contains a Python implementation of an Abstract Syntax Tree (AST
       - [Arithmetic Operations](#arithmetic-operations)
       - [Record and Mapping Operations](#record-and-mapping-operations)
       - [Set Operations](#set-operations)
+    - [7. Byzantine Operations](#7-byzantine-operations)
+      - [`ByzantineComparison`](#byzantinecomparison)
+      - [Purpose](#purpose)
+      - [Constructor](#constructor-2)
+      - [Methods](#methods)
+        - [`preCompile(spec: Spec)`](#precompilespec-spec)
+        - [`compile(spec: Spec) → TLA+ Term`](#compilespec-spec--tla-term)
+        - [`byzComparisonToNormal(spec: Spec) → TLA+ Term`](#byzcomparisontonormalspec-spec--tla-term)
+        - [`changeAliasTo(old: str, new: str)`](#changealiastoold-str-new-str)
+        - [`__check_syntax(spec: Spec)`](#__check_syntaxspec-spec)
+    - [`ByzantineLeader`](#byzantineleader)
+      - [Purpose](#purpose-1)
+        - [Converts this:](#converts-this)
+      - [Constructor](#constructor-3)
+      - [Methods](#methods-1)
+        - [`preCompile(spec: Spec)`](#precompilespec-spec-1)
+        - [`compile(spec: Spec) → TLA+ Term`](#compilespec-spec--tla-term-1)
+        - [`byzComparisonToNormal(spec: Spec) → ByzantineLeader`](#byzcomparisontonormalspec-spec--byzantineleader)
+        - [`changeAliasTo(old: str, new: str)`](#changealiastoold-str-new-str-1)
+        - [`__check_syntax(spec: Spec)`](#__check_syntaxspec-spec-1)
+    - [8. Syntactic Sugar](#8-syntactic-sugar)
+    - [`Havoc`](#havoc)
+      - [Purpose](#purpose-2)
+        - [Transforms:](#transforms)
+      - [Constructor](#constructor-4)
+      - [Methods](#methods-2)
+        - [`preCompile(spec: Spec)`](#precompilespec-spec-2)
+        - [`compile(spec: Spec) → TLA+ Term`](#compilespec-spec--tla-term-2)
+        - [`byzComparisonToNormal(spec: Spec) → Havoc`](#byzcomparisontonormalspec-spec--havoc)
+        - [`changeAliasTo(old: str, new: str)`](#changealiastoold-str-new-str-2)
+    - [`Random`](#random)
+      - [Purpose](#purpose-3)
+        - [Example:](#example-4)
+      - [Constructor](#constructor-5)
+      - [Methods](#methods-3)
+        - [`preCompile(spec: Spec)`](#precompilespec-spec-3)
+        - [`compile(spec: Spec) → TLA+ Term`](#compilespec-spec--tla-term-3)
+        - [`byzComparisonToNormal(spec: Spec) → Random`](#byzcomparisontonormalspec-spec--random)
+        - [`changeAliasTo(old: str, new: str)`](#changealiastoold-str-new-str-3)
+  - [Updates aliases within the wrapped set expression.](#updates-aliases-within-the-wrapped-set-expression)
   - [Getting Started](#getting-started)
     - [Prerequisites](#prerequisites)
     - [Installation](#installation)
@@ -399,7 +439,304 @@ set1 = Set([Scalar(1), Scalar(2), Scalar(3)])
 set2 = Set([Scalar(3), Scalar(4), Scalar(5)])
 union_set = Union(set1, set2)  # Represents {1, 2, 3} ∪ {3, 4, 5}
 ```
+---
+### 7. Byzantine Operations
 
+#### `ByzantineComparison`
+
+Represents a TLA+ construct that simulates the impact of Byzantine faults in a numeric comparison. Typically used to model threshold-based logic such as voting or quorum systems in fault-tolerant protocols.
+
+#### Purpose
+
+Transforms a standard threshold comparison into an existential quantification that accounts for a configurable number of Byzantine nodes. For example, it converts:
+
+```tla
+variable comparison threshold
+```
+
+into:
+
+```tla
+∃ x ∈ 0..MaxByzantineNodes:
+    variable comparison (threshold - x)
+```
+
+This models the potential deviation in values caused by up to `MaxByzantineNodes` faulty actors.
+
+#### Constructor
+
+```python
+ByzantineComparison(
+    variable: NumericTerm,
+    comparison: ArithmeticComparison,
+    threshold: NumericTerm,
+    inNext: bool,
+    trace: Trace
+)
+```
+
+* `variable`: The left-hand side of the comparison, typically a count or measurement.
+* `comparison`: A subclass of `ArithmeticComparison` (e.g., `>=`, `<`, etc.).
+* `threshold`: The value the variable is compared against.
+* `inNext`: Indicates whether this term is in the `Next` clause (for temporal logic purposes).
+* `trace`: Call stack trace of definitions leading to the expression, used for splitting `Next`.
+
+#### Methods
+
+##### `preCompile(spec: Spec)`
+
+Prepares the spec for transformation. If the term appears within a `Next` clause, it triggers `precompilationSplitNextFairness`.
+
+---
+
+##### `compile(spec: Spec) → TLA+ Term`
+
+Compiles the high-level term into its TLA+ representation using existential quantification to simulate Byzantine variation.
+
+---
+
+##### `byzComparisonToNormal(spec: Spec) → TLA+ Term`
+
+Returns the original, non-fault-tolerant form of the comparison (i.e., without accounting for Byzantine deviations).
+
+---
+
+##### `changeAliasTo(old: str, new: str)`
+
+Renames any aliases used within `variable` or `threshold`.
+
+---
+
+##### `__check_syntax(spec: Spec)`
+
+Internal method to verify that the inputs are of compatible types and that required constants (like `MaxByzantineNodes`) exist in the spec.
+
+---
+
+### `ByzantineLeader`
+
+Simulates a rotating leader process in a distributed protocol, which may exhibit either honest or Byzantine behavior in each round.
+
+#### Purpose
+
+Transforms dual-leader specifications (honest and Byzantine) into a single guarded expression based on the value of a `king` variable, which may take the special value `"byzantine"`.
+
+##### Converts this:
+
+```tla
+HONEST LEADER HonestSpec
+BYZANTINE LEADER ByzantineSpec
+```
+
+Into this:
+
+```tla
+leaderIsByzantine == king ∈ {"byzantine"}
+
+Init == ...
+         ∧ king ∈ (OriginalSet ∪ {"byzantine"})
+
+...
+∧ leaderIsByzantine => ByzantineSpec
+∧ ~leaderIsByzantine => HonestSpec
+```
+
+#### Constructor
+
+```python
+ByzantineLeader(
+    hon_behaviour: Union[Predicate, Clause],
+    byz_behaviour: Union[Predicate, Clause]
+)
+```
+
+* `hon_behaviour`: TLA+ term representing the expected behavior of an honest leader.
+* `byz_behaviour`: TLA+ term modeling potential Byzantine misbehavior.
+
+---
+
+#### Methods
+
+##### `preCompile(spec: Spec)`
+
+* Modifies `Init` and any other relevant definitions to extend the domain of `king` to include `"byzantine"`.
+* Adds a `leaderIsByzantine` definition to be used as a guard.
+* Logs any skipped definitions where the transformation couldn't be applied (e.g., `king` not in a recognizable form).
+
+---
+
+##### `compile(spec: Spec) → TLA+ Term`
+
+Returns a conjunction of implications, routing the behavior according to the current leader’s honesty:
+
+```tla
+(~leaderIsByzantine => HonestSpec)
+∧ (leaderIsByzantine => ByzantineSpec)
+```
+
+---
+
+##### `byzComparisonToNormal(spec: Spec) → ByzantineLeader`
+
+Returns a new `ByzantineLeader` object in which `byzComparisonToNormal` has been applied recursively to both `hon_behaviour` and `byz_behaviour`.
+
+---
+
+##### `changeAliasTo(old: str, new: str)`
+
+Updates aliases inside both the honest and Byzantine behavior specifications.
+
+---
+
+##### `__check_syntax(spec: Spec)`
+
+Validates that:
+
+* `hon_behaviour` and `byz_behaviour` are valid boolean predicates.
+* The `king` variable is declared in the spec’s variable list.
+
+
+---
+
+### 8. Syntactic Sugar
+
+Here's `.md`-style documentation for the `Havoc` and `Random` classes, formatted to match the style used previously.
+
+---
+
+### `Havoc`
+
+Represents non-deterministic assignment of one or more variables to arbitrary values from their associated domains, as defined in the spec’s `TypeOK` clauses.
+
+#### Purpose
+
+Models arbitrary state transitions for selected variables. This is especially useful for modeling uncertainty, testing protocol resilience, or abstract execution steps.
+
+##### Transforms:
+
+```tla
+HAVOC x, y, z
+```
+
+Into:
+
+```tla
+x' ∈ TypeOfX
+∧ y' ∈ TypeOfY
+∧ z' ∈ TypeOfZ
+```
+
+Where `TypeOfX`, etc., are inferred from `TypeOK` declarations in the spec.
+
+---
+
+#### Constructor
+
+```python
+Havoc(vars: List[Variable], sets: List[Term], spec: Spec)
+```
+
+* `vars`: List of variables to be assigned arbitrary values.
+* `sets`: \[**Deprecated in use**] Internally overwritten — actual sets are inferred from the spec.
+* `spec`: The TLA+ spec, used to extract `TypeOK` constraints.
+
+> 💡 Raises `ValueError` or `TypeError` if mismatched or undefined variable information is found.
+
+---
+
+#### Methods
+
+##### `preCompile(spec: Spec)`
+
+No-op. Present for interface compatibility.
+
+---
+
+##### `compile(spec: Spec) → TLA+ Term`
+
+Returns a conjunction of statements of the form:
+
+```tla
+x' ∈ TypeOK_set
+```
+
+If only one variable is affected, returns the statement directly without conjunction.
+
+---
+
+##### `byzComparisonToNormal(spec: Spec) → Havoc`
+
+No-op for `Havoc`, simply returns self.
+
+---
+
+##### `changeAliasTo(old: str, new: str)`
+
+Updates all aliases in the involved sets.
+
+---
+
+### `Random`
+
+Encapsulates the act of choosing a random value from a given set in TLA+, implemented using the `CHOOSE` operator.
+
+#### Purpose
+
+Used to introduce non-determinism or model randomized algorithms. Always selects a single element from a set without any predicate constraint (i.e., always `TRUE`).
+
+##### Example:
+
+```tla
+RANDOM {1, 2, 3}
+```
+
+Becomes:
+
+```tla
+CHOOSE v ∈ {1, 2, 3}: TRUE
+```
+
+---
+
+#### Constructor
+
+```python
+Random(set: Term)
+```
+
+* `set`: The TLA+ set from which to choose a value.
+
+> 💡 Raises `TypeError` if `set` is not a `Term`.
+
+---
+
+#### Methods
+
+##### `preCompile(spec: Spec)`
+
+No-op. Present for interface consistency.
+
+---
+
+##### `compile(spec: Spec) → TLA+ Term`
+
+Compiles into a TLA+ `CHOOSE` construct:
+
+```tla
+CHOOSE v ∈ compiled_set: TRUE
+```
+
+---
+
+##### `byzComparisonToNormal(spec: Spec) → Random`
+
+No-op for `Random`, returns self.
+
+---
+
+##### `changeAliasTo(old: str, new: str)`
+
+Updates aliases within the wrapped set expression.
 ---
 
 ## Getting Started
