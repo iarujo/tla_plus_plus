@@ -40,6 +40,12 @@ class Definition():
             return f"{self.name}({', '.join(repr(a) for a in self.arguments)}) == {self.value.__repr__()}"
         return f"{self.name} == {self.value.__repr__()}"
     
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the definition.
+        """
+        return 1 + self.value.get_node_count() + len(self.arguments)
+    
     def preCompile(self, spec):
         """
         Pre-compilation applies changes to the spec without necessarily returning new objects

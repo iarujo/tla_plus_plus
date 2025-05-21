@@ -27,6 +27,9 @@ class TRUE(Predicate):
     def __repr__(self):
         return "TRUE"
     
+    def get_node_count(self):
+        return 1
+    
     def preCompile(self, spec):
         """
         Pre-compilation applies changes to the spec without necessarily returning new objects
@@ -45,6 +48,9 @@ class FALSE(Predicate):
     
     def __repr__(self):
         return "FALSE"
+    
+    def get_node_count(self):
+        return 1
     
     def preCompile(self, spec):
         """
@@ -67,6 +73,12 @@ class UniversalQuantifier(Predicate):
         
     def __repr__(self):
         return f"(\\A {', '.join(repr(v) for v in self.variables)} \\in  {repr(self.set)}: {repr(self.predicate)})" #{"\n\t".join([f'{l}' for l in repr(self.predicate).splitlines()])}"
+
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the predicate tree
+        """
+        return 1 + sum([v.get_node_count() for v in self.variables]) + self.set.get_node_count() + self.predicate.get_node_count()
 
     def preCompile(self, spec):
         """
@@ -112,6 +124,12 @@ class ExistentialQuantifier(Predicate):
     def __repr__(self):
         return f"(\\E {', '.join(repr(v) for v in self.variables)} \\in {repr(self.set)}: {repr(self.predicate)})" # {"\n\t".join([f'{l}' for l in repr(self.predicate).splitlines()])}"
     
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the predicate tree
+        """
+        return 1 + sum([v.get_node_count() for v in self.variables]) + self.set.get_node_count() + self.predicate.get_node_count()
+    
     def preCompile(self, spec):
         """
         Pre-compilation applies changes to the spec without necessarily returning new objects
@@ -153,6 +171,12 @@ class Not(Predicate):
     def __repr__(self):
         return f"~({repr(self.predicate)})"  
     
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the predicate tree
+        """
+        return 1 + self.predicate.get_node_count()
+    
     def preCompile(self, spec):
         """
         Pre-compilation applies changes to the spec without necessarily returning new objects
@@ -182,6 +206,12 @@ class In(Predicate):
         
     def __repr__(self):
         return f"{self.left} \\in {self.right}"
+    
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the predicate tree
+        """
+        return 1 + self.left.get_node_count() + self.right.get_node_count()
     
     def preCompile(self, spec):
         """
@@ -215,6 +245,12 @@ class SubsetEquals(Predicate):
     def __repr__(self):
         return f"(({self.left}) \\subseteq ({self.right}))"
     
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the predicate tree
+        """
+        return 1 + self.left.get_node_count() + self.right.get_node_count()
+    
     def preCompile(self, spec):
         """
         Pre-compilation applies changes to the spec without necessarily returning new objects
@@ -247,6 +283,12 @@ class ArithmeticComparison(Predicate):
         
     def __repr__(self):
         return f"(({self.left}) {self.symbol} ({self.right}))"
+    
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the predicate tree
+        """
+        return 1 + self.left.get_node_count() + self.right.get_node_count()
     
     def get_symbol(self):
         raise NotImplementedError("This method should be implemented in subclasses")

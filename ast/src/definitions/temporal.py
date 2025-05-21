@@ -44,6 +44,12 @@ class Box(TemporalOperator):
     def __repr__(self):
         return f"[]{self.term}"
     
+    def get_node_count(self):
+        """
+        Get number of nodes
+        """
+        return 1 + self.term.get_node_count()
+    
     def preCompile(self, spec):
         """
         Pre-compilation applies changes to the spec without necessarily returning new objects
@@ -78,6 +84,12 @@ class Diamond(TemporalOperator):
         
     def __repr__(self):
         return f"<>{self.term}"
+    
+    def get_node_count(self):
+        """
+        Get number of nodes
+        """
+        return 1 + self.term.get_node_count()
     
     def preCompile(self, spec):
         """
@@ -114,6 +126,15 @@ class FrameCondition(TemporalOperator):
         
     def __repr__(self):
         return f"[{self.action}]_<<{', '.join(repr(v) for v in self.variables)}>>"
+    
+    def get_node_count(self):
+        """
+        Get number of nodes
+        """
+        count = 0
+        for v in self.variables:
+            count += v.get_node_count()
+        return 1 + self.action.get_node_count() + count
     
     def preCompile(self, spec):
         """
@@ -154,6 +175,15 @@ class WeakFairness(TemporalOperator):
         
     def __repr__(self):
         return f"WF_<<{', '.join(repr(v) for v in self.variables)}>>({self.action})"
+    
+    def get_node_count(self):
+        """
+        Get number of nodes
+        """
+        count = 0
+        for v in self.variables:
+            count += v.get_node_count()
+        return 1 + self.action.get_node_count() + count
     
     def set_action(self, action: Term):
         """

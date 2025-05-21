@@ -27,7 +27,6 @@ class Spec:
         self.variables = variables # The variables of the module
         self.defs = defs # The definitions of the module
         self.pending_updates = [] # The pending updates of the module for compilaation
-        # TODO Add assumptions, theorems, and properties
     
     def __repr__(self):
         spec = f"------------------------ MODULE {self.module} ------------------------\n"
@@ -58,6 +57,9 @@ class Spec:
         return None if self.defs is None else self.defs
     
     def get_init(self):
+        """
+        Returns the Init definition for the module.
+        """
         for d in self.defs:
             if d.get_name() == "Init":
                 return d
@@ -79,6 +81,24 @@ class Spec:
                 return d.value.right
         return None
     
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the module. We don't count all nodes, but rather only the ones which may vary in amount (i.e. the variables and the definitions)
+        """
+        count = 0
+        # Count the number of nodes in the assumptions
+        if self.assumptions is not None:
+            for a in self.assumptions:
+                count += a.get_node_count()
+        # Count the number of variables
+        if self.variables is not None:
+            count += self.variables.get_node_count()
+        # Count the number of nodes in the definitions
+        if self.defs is not None:
+            for d in self.defs:
+                count += d.get_node_count()
+        return count
+                
     def update_later(self, update: Definition):
         """
         Adds an update to the list of pending updates. For now, updates are just new versions of definitions that we will change in the spec
@@ -207,10 +227,6 @@ class Spec:
             splitFairnessTrace(trace)
             
         # Now we need to update the assumptions to use the new definitions
-            
-            
-        
-                
                 
     def compile(self):
         """
@@ -246,5 +262,3 @@ class Spec:
         console.rule("[bold blue]🛠️ Compilation Done!")
         
         return compiled_spec
-
-        

@@ -40,6 +40,12 @@ class Havoc(TLAPlusPlusTerm):
     def __repr__(self):
         return f"HAVOC {", ".join([repr(v) for v in self.vars])}"
     
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the havoc statement.
+        """
+        return len(self.vars) + len(self.sets)
+    
     def preCompile(self, spec):
         """
         Pre-compilation applies changes to the spec without necessarily returning new objects
@@ -90,6 +96,12 @@ class Random(TLAPlusPlusTerm):
     
     def __repr__(self):
         return f"RANDOM {repr(self.set)}"
+    
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the random statement.
+        """
+        return 1 + self.set.get_node_count()
     
     def preCompile(self, spec):
         """

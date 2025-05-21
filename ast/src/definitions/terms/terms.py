@@ -48,6 +48,12 @@ class Term(AbstractTerm):
     def __le__(self, value):
         return GreaterThanEquals(value, self)
     
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the term.
+        """
+        return 1
+    
     def preCompile(self, spec):
         """
         Pre-compilation applies changes to the spec without necessarily returning new objects
@@ -248,6 +254,12 @@ class Unchanged(Term):
     def __repr__(self):
         return f"UNCHANGED {repr(self.var)}"
     
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the term.
+        """
+        return 1 + self.var.get_node_count()
+    
     def preCompile(self, spec):
         """
         Pre-compilation applies changes to the spec without necessarily returning new objects
@@ -285,6 +297,12 @@ class Choose(Term):
     def __repr__(self):
         return f"CHOOSE {repr(self.var)} \\in {repr(self.set)}: {repr(self.predicate)}"
     
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the term.
+        """
+        return 1 + self.var.get_node_count() + self.set.get_node_count() + self.predicate.get_node_count()
+    
     def preCompile(self, spec):
         """
         Pre-compilation applies changes to the spec without necessarily returning new objects
@@ -307,8 +325,6 @@ class Choose(Term):
         self.set.changeAliasTo(old, new)
         self.predicate.changeAliasTo(old, new)
     
-    
-    
 class Enabled(Term):
     """
     Represents the enable operator in TLA+
@@ -323,6 +339,12 @@ class Enabled(Term):
 
     def __repr__(self):
         return f"ENABLED {repr(self.var)}"
+    
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the term.
+        """
+        return 1 + self.var.get_node_count()
     
     def preCompile(self, spec):
         """
@@ -342,8 +364,6 @@ class Enabled(Term):
         """
         self.var.changeAliasTo(old, new)
     
-    
-    
 class Range(Term):
     """
     Represents a range of values in TLA+.
@@ -360,6 +380,12 @@ class Range(Term):
 
     def __repr__(self):
         return f"{repr(self.start)}..{repr(self.end)}"
+    
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the term.
+        """
+        return 1 + self.start.get_node_count() + self.end.get_node_count()
     
     def preCompile(self, spec):
         """
@@ -381,8 +407,6 @@ class Range(Term):
         self.start.changeAliasTo(old, new)
         self.end.changeAliasTo(old, new)
     
-    
-    
 """ Arithmetic operations """
 
 class BinaryArithmeticOp(Function):
@@ -394,6 +418,12 @@ class BinaryArithmeticOp(Function):
         
     def __repr__(self):
         return f"({repr(self.a)} {self.symbol} {repr(self.b)})"
+    
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the term.
+        """
+        return 1 + self.a.get_node_count() + self.b.get_node_count()
 
     def preCompile(self, spec):
         """

@@ -23,6 +23,12 @@ class Record(Term):
     def __repr__(self):
         return f"[{', '.join([f'{f} : {repr(t)}' for f, t in zip(self.fields, self.types)])}]"
     
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the term.
+        """
+        return 1 + sum(t.get_node_count() for t in self.types)
+    
     def preCompile(self, spec):
         """
         Pre-compilation applies changes to the spec without necessarily returning new objects
@@ -75,6 +81,12 @@ class RecordInstance(Term):
     def __repr__(self):
         return f"[{', '.join([f'{f} |-> {repr(v)}' for f, v in zip(self.fields, self.vals)])}]"
     
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the term.
+        """
+        return 1 + sum(v.get_node_count() for v in self.vals)
+    
     def preCompile(self, spec):
         """
         Pre-compilation applies changes to the spec without necessarily returning new objects
@@ -126,6 +138,12 @@ class Mapping(Term):
 
     def __repr__(self):
         return f"[{', '.join([f'{repr(v)} -> {repr(f)}' for v, f in zip(self.vals, self.funs)])}]"
+    
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the term.
+        """
+        return 1 + sum(v.get_node_count() for v in self.vals) + sum(f.get_node_count() for f in self.funs)
 
     def preCompile(self, spec):
         """

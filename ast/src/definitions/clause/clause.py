@@ -52,6 +52,15 @@ class Conjunction(Clause):
         """
         self.literals = [l for l in self.literals if l != literal]
         
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the clause.
+        """
+        count = 0
+        for l in self.literals:
+            count += l.get_node_count()
+        return count
+        
     def preCompile(self, spec):
         """
         Pre-compilation applies changes to the spec without necessarily returning new objects
@@ -110,9 +119,18 @@ class Disjunction(Clause):
         
     def remove_literal(self, literal: Predicate):
         """
-        Removes a literal from the conjunction.
+        Removes a literal from the disjunction.
         """
         self.literals = [l for l in self.literals if l != literal]
+    
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the clause.
+        """
+        count = 0
+        for l in self.literals:
+            count += l.get_node_count()
+        return count
         
     def preCompile(self, spec):
         """
@@ -160,6 +178,12 @@ class Implication(Clause):
         
     def __repr__(self):
         return f"({self.p.__repr__()} => {self.q.__repr__()})"  
+    
+    def  get_node_count(self):
+        """
+        Returns the number of nodes in the clause.
+        """
+        return self.p.get_node_count() + self.q.get_node_count() + 1
     
     def preCompile(self, spec):
         """

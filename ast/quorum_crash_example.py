@@ -9,7 +9,7 @@ from src.definitions.terms.terms import Constant, Variable, Scalar, String, Alia
 from src.definitions.terms.records import Record, RecordInstance, Mapping
 from src.definitions.terms.finiteSet import Subset, Set, SetOf, SetFrom, SetExcept, IndexSet, Cardinality, Union, Intersection
 from src.definitions.temporal import Box, Diamond, FrameCondition, WeakFairness
-from src.tla_plusplus.tla_plusplus_byzantine import ByzantineComparison
+from src.tla_plusplus.tla_plusplus_byzantine import ByzantineComparison, ByzantineLeader
 from comparison_metrics import compare_asts
 
 
@@ -474,14 +474,32 @@ def quorum_ast():
     
     Crash = Definition(
         name="Crash",
-        value=Conjunction(
-            [
-                In(Alias("king'", None), Acceptors),
+        value= ByzantineLeader(
+            byz_behaviour=Conjunction(
+                                [
+                                    In(Alias("king'", None), Acceptors),
+                                    Unchanged(network),
+                                    Unchanged(decided),
+                                    Unchanged(counters),
+                                ],
+                          ),
+            hon_behaviour=Conjunction([
+                In(Alias("king'", None), Acceptors), #TODO: Fix compiler is not adding king here huh
+                # decided' = [decided EXCEPT ![king] = {}]
+                Alias("decided'", None) == SetExcept(
+                    decided,
+                    king,
+                    Set([]),
+                ),
+                # counters' = [counters EXCEPT ![king] = 0]
+                Alias("counters'", None) == SetExcept(
+                    counters,
+                    king,
+                    Scalar(0),
+                ),
                 Unchanged(network),
-                Unchanged(decided),
-                Unchanged(counters),
-            ],
-        ),
+            ]),
+        )
     )
 
     Init = Definition(

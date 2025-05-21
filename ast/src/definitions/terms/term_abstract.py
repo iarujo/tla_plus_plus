@@ -10,6 +10,13 @@ class AbstractTerm(ABC):
         pass
     
     @abstractmethod
+    def get_node_count(self):
+        """
+        Return the number of nodes in the term.
+        """
+        pass
+    
+    @abstractmethod
     def preCompile(self, spec):
         """
         Pre-compilation applies changes to the spec without necessarily returning new objects

@@ -12,6 +12,12 @@ class Assume:
     def __repr__(self):
         return f"ASSUME {self.name} == {self.expr.__repr__()}"
     
+    def get_node_count(self) -> int:
+        """
+        Returns the number of nodes in the expression tree.
+        """
+        return self.expr.get_node_count() + 1 # +1 for the ASSUME node
+    
     def preCompile(self, spec):
         """
         Pre-compilation applies changes to the spec without necessarily returning new objects

@@ -15,3 +15,13 @@ class Variables():
 
     def __repr__(self):
         return f"VARIABLES {', '.join(v.__repr__() for v in self.variables)}"
+    
+    def get_node_count(self):
+        """
+        Returns the number of nodes
+        """
+        count = 1
+        for v in self.variables:
+            count += 1
+        return count
+        

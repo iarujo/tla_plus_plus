@@ -10,6 +10,7 @@ from src.definitions.terms.records import Record, RecordInstance, Mapping
 from src.definitions.terms.finiteSet import Subset, Set, SetOf, SetFrom, SetExcept, IndexSet, Cardinality, Union, Intersection
 from src.definitions.temporal import Box, Diamond, FrameCondition, WeakFairness
 from src.tla_plusplus.tla_plusplus_byzantine import ByzantineComparison, ByzantineLeader
+from comparison_metrics import compare_asts
 
 def ast():
     """ Replicate the OneRoundHonestQuorum specification from the repo """
@@ -99,6 +100,5 @@ def ast():
     
     return spec
     
-print(ast())
-
-print(ast().compile())
+if __name__ == "__main__":
+    compare_asts(ast(), ast().compile())

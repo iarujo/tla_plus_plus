@@ -21,6 +21,12 @@ class IndexSet(Function):
     def __repr__(self):
         return f"{repr(self.set)}[{repr(self.index)}]"
     
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the term.
+        """
+        return 1 + self.set.get_node_count() + self.index.get_node_count()
+    
     def preCompile(self, spec):
         """
         Pre-compilation applies changes to the spec without necessarily returning new objects
@@ -68,6 +74,12 @@ class Subset(Function):
     def __repr__(self):
         return f"SUBSET {repr(self.set)}"
     
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the term.
+        """
+        return 1 + self.set.get_node_count()
+    
     def preCompile(self, spec):
         """
         Pre-compilation applies changes to the spec without necessarily returning new objects
@@ -109,6 +121,12 @@ class Set(Function):
         
     def __repr__(self):
         return "{" + f"{', '.join(repr(e) for e in self.elems)}" + "}"
+    
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the term.
+        """
+        return 1 + sum(e.get_node_count() for e in self.elems)
     
     def preCompile(self, spec):
         """
@@ -161,6 +179,12 @@ class SetOf(Function):
     def __repr__(self):
         return f"{{ {repr(self.var)} \\in {repr(self.set)}: {repr(self.predicate)} }}"
     
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the term.
+        """
+        return 1 + self.var.get_node_count() + self.set.get_node_count() + self.predicate.get_node_count()
+    
     def preCompile(self, spec):
         """
         Pre-compilation applies changes to the spec without necessarily returning new objects
@@ -211,6 +235,12 @@ class SetFrom(Function):
 
     def __repr__(self):
         return f"{{ {repr(self.var)}: {repr(self.predicate)} }}"
+    
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the term.
+        """
+        return 1 + self.var.get_node_count() + self.predicate.get_node_count()
     
     def preCompile(self, spec):
         """
@@ -263,6 +293,12 @@ class SetExcept(Function):
     def __repr__(self):
         return f"[{repr(self.set)} EXCEPT ![{repr(self.index)}] = {repr(self.value)}]"
     
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the term.
+        """
+        return 1 + self.set.get_node_count() + self.index.get_node_count() + self.value.get_node_count()
+    
     def preCompile(self, spec):
         """
         Pre-compilation applies changes to the spec without necessarily returning new objects
@@ -311,6 +347,12 @@ class Cardinality(Function):
     
     def __repr__(self):
         return f"Cardinality({repr(self.set)})"
+    
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the term.
+        """
+        return 1 + self.set.get_node_count()
     
     def preCompile(self, spec):
         """
@@ -361,6 +403,12 @@ class Union(Function):
         return (
             f"({repr(self.a)} \\cup {repr(self.b)})"
         )
+        
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the term.
+        """
+        return 1 + self.a.get_node_count() + self.b.get_node_count()
         
     def preCompile(self, spec):
         """
@@ -413,6 +461,12 @@ class Intersection(Function):
         return (
             f"({repr(self.a)} \\cap {repr(self.b)})"
         )
+        
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the term.
+        """
+        return 1 + self.a.get_node_count() + self.b.get_node_count()
         
     def preCompile(self, spec):
         """

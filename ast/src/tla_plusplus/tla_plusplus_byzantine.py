@@ -41,6 +41,12 @@ class ByzantineComparison(TLAPlusPlusTerm):
     def __repr__(self):
         return f"{repr(self.variable)} {self.comparison.get_symbol(self.comparison)} BYZANTINE {self.threshold}"
     
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the Byzantine comparison.
+        """
+        return self.variable.get_node_count() + self.threshold.get_node_count() + 1
+    
     def preCompile(self, spec):
         """
         Pre-compilation applies changes to the spec without necessarily returning new objects
@@ -65,7 +71,7 @@ class ByzantineComparison(TLAPlusPlusTerm):
         MaxByzantineNodes = Alias("MaxByzantineNodes", None)
         return ExistentialQuantifier(
             variables=[x], 
-            set=Range(0, MaxByzantineNodes), 
+            set=Range(Scalar(0), MaxByzantineNodes), 
             predicate= self.comparison(
                 self.variable,
                 self.threshold - x
@@ -126,8 +132,8 @@ class ByzantineLeader(TLAPlusPlusTerm):
         
         // These definitions should be placed inside the code block where the behaviour mught differ
         // Note: Do not use conjunctions between the two keywords!
-            HONEST LEADER <user-defined honest behaviour specification> // This is your regular protocol behaviour
-            BYZANTINE LEADER <user-defined byzantine behaviour specification>
+            MODE 1 <user-defined mode 1 behaviour specification> // This is your regular protocol behaviour
+            MODE 2 <user-defined mode 2 behaviour specification>
     
     into this:
     
@@ -135,21 +141,21 @@ class ByzantineLeader(TLAPlusPlusTerm):
 
         TypeOK == /\\ ...
 					...
-					/\\ king \\in (<Original Set> \\cup {"byzantine"})
+					/\\ king \\in (<Original Set> \\cup {"mode 2"})
 					
-        leaderIsByzantine == king \\in {"byzantine"}
+        pickModeTwo == king \\in {"mode 2"}
 
         ...
         
         // These definitions should be placed inside the code block where the behaviour might differ
-            /\\ leaderIsByzantine => <user-defined honest behaviour specification>
-            /\\ ~leaderIsByzantine => <user-defined byzantine behaviour specification>
+            /\\ pickModeTwo => <user-defined honest behaviour specification>
+            /\\ ~pickModeTwo => <user-defined byzantine behaviour specification>
         
         ...
 
         Init == /\\ ...
                         ...
-                        /\\ king \\in (<Original Set> \\cup {"byzantine"})
+                        /\\ king \\in (<Original Set> \\cup {"mode 2"})
     """
     
     def __init__(self, hon_behaviour: typing.Union[Predicate, Clause], byz_behaviour: typing.Union[Predicate, Clause]):
@@ -157,7 +163,13 @@ class ByzantineLeader(TLAPlusPlusTerm):
         self.byz_behaviour = byz_behaviour
         
     def __repr__(self):
-        return f"HONEST LEADER {repr(self.hon_behaviour)} /\\ BYZANTINE LEADER {repr(self.byz_behaviour)}"
+        return f"MODE 1 {repr(self.hon_behaviour)} /\\ MODE 2 {repr(self.byz_behaviour)}"
+    
+    def get_node_count(self):
+        """
+        Returns the number of nodes in the Byzantine leader.
+        """
+        return self.hon_behaviour.get_node_count() + self.byz_behaviour.get_node_count() + 1
     
     def preCompile(self, spec: Spec):
         """
@@ -195,7 +207,7 @@ class ByzantineLeader(TLAPlusPlusTerm):
                 if isinstance(l, In) and repr(l.left) == repr(king):
                     con.literals[i] = In(
                             left=king,
-                            right=Union(l.right, Set([String("byzantine")]))
+                            right=Union(l.right, Set([String("mode 2")]))
                         )
                     changedKing = True
                     
@@ -215,16 +227,16 @@ class ByzantineLeader(TLAPlusPlusTerm):
         for d in defs:
             change_king_definition(king, d)
             
-        # leaderIsByzantine == king \in {"byzantine"}
-        leaderIsByzantine = Definition(
-            name="leaderIsByzantine",
+        # pickModeTwo == king \in {"mode 2"}
+        pickModeTwo = Definition(
+            name="pickModeTwo",
             value= In(
                 left=king,
-                right=Set([String("byzantine")])
+                right=Set([String("mode 2")])
             )
             
         )
-        spec.update(leaderIsByzantine)
+        spec.update(pickModeTwo)
             
         console.print("[green]Precompiling for Byzantine Leader Done!")
     
@@ -233,13 +245,36 @@ class ByzantineLeader(TLAPlusPlusTerm):
         console = Console()
         console.print("[yellow]Compiling for Byzantine Leader...")
         
+        def change_king_definition(king: Variable, expr: Definition):
+            if isinstance(expr, In):
+                    expr= Conjunction([expr])
+            # Make sure the definition is a conjunction, otherwise, the king's state space won't be updated
+            if not isinstance(expr, Conjunction):
+                return
+                
+            con = expr
+            changedKing= False
+                    
+            for i, l in enumerate(con.literals):
+                if isinstance(l, In) and repr(l.left) == repr(king):
+                    con.literals[i] = In(
+                            left=king,
+                            right=Union(l.right, Set([String("mode 2")]))
+                        )
+                    changedKing = True
+            if changedKing:
+                console.print(f"[green]✅ Updated the king's state space in the definition [bold]{expr}[/bold].")
+                
+        change_king_definition(Alias("king'", None), self.hon_behaviour)
+        change_king_definition(Alias("king'", None), self.byz_behaviour)
+        
         return Conjunction([
             Implication(
-                p=Not(Alias("leaderIsByzantine", None)),
+                p=Not(Alias("pickModeTwo", None)),
                 q=self.hon_behaviour.compile(spec)
             ),
             Implication(
-                p=Alias("leaderIsByzantine", None),
+                p=Alias("pickModeTwo", None),
                 q=self.byz_behaviour.compile(spec)
             )
         ])
