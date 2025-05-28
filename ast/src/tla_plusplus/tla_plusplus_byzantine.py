@@ -5,7 +5,7 @@ from src.spec import Spec
 from src.definitions.definition import Definition
 from src.definitions.clause.clause import Clause, Conjunction, Implication
 from src.definitions.predicates.predicates import TRUE, FALSE,  Predicate, ArithmeticComparison, ExistentialQuantifier, In, Not
-from src.definitions.terms.terms import Term, Scalar, Alias, Constant, Variable, Scalar, Constant, Alias, Variable, Function, Choose, BinaryArithmeticOp, Range, String
+from src.definitions.terms.terms import Term, Scalar, Alias, Constant, Variable, Scalar, Constant, Alias, Variable, Function, Choose, BinaryArithmeticOp, Range, String, Addition, Substraction, Multiplication, Division, BinaryArithmeticOp
 from src.definitions.terms.finiteSet import Cardinality, Set, Union
 from src.tla_plusplus.tla_plusplus_term import TLAPlusPlusTerm
 
@@ -89,13 +89,31 @@ class ByzantineComparison(TLAPlusPlusTerm):
         """
         Check the syntax of the Byzantine comparison term.
         """
+        console = Console()
+        
         # Check if the variable is a scalar or an alias
-        if not isinstance(self.variable, (Scalar, Alias, Constant, Variable, Scalar, Variable, Function, Choose, BinaryArithmeticOp)):
-            raise TypeError("The variable must have a numeric value.")
+        if not isinstance(self.variable, (Cardinality, Alias)):
+            raise TypeError(f'The variable {self.variable} must be either the Cardinality of the set of votes or voters or an Alias of a definition including the cardinaility of this same set.')
+        
+        def isLinearCombinationOfConstants(term: Term) -> bool:
+            """
+            Check if the term is a linear combination of constants.
+            """
+            if isinstance(term, (Constant, Scalar)):
+                return True
+            elif isinstance(term, BinaryArithmeticOp):
+                return isLinearCombinationOfConstants(term.a) and isLinearCombinationOfConstants(term.b)
+            elif isinstance(term, Alias):
+                # In this case, only a weak check is done
+                console.print("[red]Warning: The alias {term} is not guaranteed to be a linear combination of constants. This may lead to unexpected results.")
+                return True
+                
+            return False
         
         # Check if the threshold is a scalar or an alias
-        if not isinstance(self.threshold, (Scalar, Alias, Constant, Variable, Scalar, Variable, Function, Choose, BinaryArithmeticOp)):
-            raise TypeError("The threshold must have a numeric value.")
+        if not isLinearCombinationOfConstants(self.threshold):
+            raise TypeError(f'The threshold {self.threshold} must be a Constant or a function of Constants.')
+        
             
         # Check if the comparison is a valid arithmetic comparison
         if not issubclass(self.comparison, ArithmeticComparison):
@@ -178,9 +196,7 @@ class ByzantineLeader(TLAPlusPlusTerm):
     
         console = Console()
         console.print("[yellow]Precompiling for Byzantine Leader...")
-        
-        # TODO: Fix, currently changes are being applied twice, whoopsie
-        
+                
         self.__check_syntax(spec)
         
         king = Variable("king")
@@ -315,5 +331,3 @@ class ByzantineLeader(TLAPlusPlusTerm):
         """
         self.hon_behaviour.changeAliasTo(old, new)
         self.byz_behaviour.changeAliasTo(old, new)
-        
-    

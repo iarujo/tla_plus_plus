@@ -48,8 +48,8 @@ def compare_asts(original: Spec, compiled: Spec):
     
     nodes1 = original.get_node_count()
     nodes2 = compiled.get_node_count()
-    print(f'Length original: {nodes1}')
-    print(f'Length compiled: {nodes2}')
+    print(f'Node count original: {nodes1}')
+    print(f'Node count compiled: {nodes2}')
     
     comparison_results = compare_asts_aux(nodes1, nodes2, string1, string2)
     

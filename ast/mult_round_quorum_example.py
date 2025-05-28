@@ -53,7 +53,7 @@ def ast():
     
     Epoch = Alias("Epoch", None)
     
-    QuorumAgreedValues = Definition("QuorumAgreedValues", SetOf(v, Values, ExistentialQuantifier([Q], Subset(Acceptor), Conjunction([ByzantineComparison(Cardinality(Q), GreaterThanEquals, threshold, True, [["QuorumAgreedValues", "Decide", "Next"]]), UniversalQuantifier([a1], Q, In(RecordInstance(["type", "acc", "value", "epoch"], [String("vote"), a1, v, e]), network))]))), [e, threshold])
+    QuorumAgreedValues = Definition("QuorumAgreedValues", SetOf(v, Values, ExistentialQuantifier([Q], Subset(Acceptor), Conjunction([ByzantineComparison(Cardinality(Q), GreaterThanEquals, Quorum, True, [["QuorumAgreedValues", "Decide", "Next"]]), UniversalQuantifier([a1], Q, In(RecordInstance(["type", "acc", "value", "epoch"], [String("vote"), a1, v, e]), network))]))), [e])
     
     hasVoted = Definition(name = "hasVoted", arguments = [a, e], value = ExistentialQuantifier([v], Values, In(RecordInstance(["type", "acc", "value", "epoch"], [String("vote"), a, v, e]), network)))
     
@@ -75,18 +75,17 @@ def ast():
     
     AllDecided = Definition("AllDecided", UniversalQuantifier([a], Acceptor, In(RecordInstance(["value", "epoch"], [v, e]), IndexSet(decided, a))), [v, e])
     
-    # TODO: BYZANTINE COMPARISON HERE
     Termination = Definition("Termination", Box(ExistentialQuantifier([v], Values, ExistentialQuantifier([e], Epoch, Implication(Alias("EnoughVotes", [v, e]), Diamond(Box(Alias("AllDecided", [v, e]))))))))
     
     Init = Definition("Init", Conjunction([network == Set([]), decided == RecordInstance([In(a, Acceptor)], [Set([RecordInstance(["epoch", "value"], [Scalar(-1), Scalar(-1)])])])]))
     
     Send = Definition("Send", Alias("network'", None) == Union(network, Set([m])), [m])
     
-    Decide = Definition("Decide", Conjunction([ExistentialQuantifier([e], Epoch, ExistentialQuantifier([v], Alias("QuorumAgreedValues", [e, Quorum]), Alias("decided'", None) == SetExcept(decided, a, Union(Alias("@", None), Set([RecordInstance(["value", "epoch"], [v, e])]))))), Unchanged(network)]), [a])
+    Decide = Definition("Decide", Conjunction([ExistentialQuantifier([e], Epoch, ExistentialQuantifier([v], Alias("QuorumAgreedValues", [e]), Alias("decided'", None) == SetExcept(decided, a, Union(Alias("@", None), Set([RecordInstance(["value", "epoch"], [v, e])]))))), Unchanged(network)]), [a])
     
     CastVote = Definition("CastVote", Conjunction([Not(Alias("hasVoted", [a, e])), Alias("Send", [(RecordInstance(["type", "acc", "value", "epoch"], [String("vote"), a, v, e]))]), Unchanged(decided)]), arguments=[a, v, e])
     
-    Next = Definition("Next", Disjunction([ExistentialQuantifier([a], Acceptor, ExistentialQuantifier([v], Values, ExistentialQuantifier([e], Epoch, Alias("CastVote", [a, v, e])))), ExistentialQuantifier([a], Acceptor, Alias("Decide", [a]))]))
+    Next = Definition("Next",Disjunction([ExistentialQuantifier([a], Acceptor, ExistentialQuantifier([v], Values, ExistentialQuantifier([e], Epoch, Alias("CastVote", [a, v, e])))), ExistentialQuantifier([a], Acceptor, Alias("Decide", [a]))]))
     
     _Spec = Definition("Spec", Conjunction([Alias("Init", None), Box(FrameCondition(Alias("Next", None), [network, decided])), WeakFairness(Alias("Next", None), [network, decided])]))
                                             

@@ -39,9 +39,15 @@ class Conjunction(Clause):
     
     def getLiterals(self):
         """
-        Returns the literals in the conjunction.
+        Returns a deep copy of the literals in the conjunction.
         """
         return deepcopy(self.literals)
+    
+    def getLiteralsUnsafe(self):
+        """
+        Returns a reference to the literals in the conjunction.
+        """
+        return self.literals
     
     def add_literal(self, literal: Predicate):
         self.literals.append(literal)
@@ -50,6 +56,8 @@ class Conjunction(Clause):
         """
         Removes a literal from the conjunction.
         """
+        for l in self.literals:
+            print(f'Removing literal {literal} from conjunction {l}, {l == literal}')
         self.literals = [l for l in self.literals if l != literal]
         
     def get_node_count(self):

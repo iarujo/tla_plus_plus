@@ -179,14 +179,44 @@ class Spec:
                 # Insert the definitions into the functions
                 self.defs.insert(index, defUnfair)
                 self.defs.insert(index, defFair)
-                
-                
         
             # If this definition calls yet another definition, make sure each of the fair/unfair functions call the right definition, then recurse
             if len(trace) > 1:
                 print("Recursing into definition", trace[-2])
+                
                 defFair.changeAliasTo(trace[-2], f'{trace[-2]}_Fair')
                 defUnfair.changeAliasTo(trace[-2], f'{trace[-2]}_Unfair')
+                
+                """
+                    In the special case where the definition contains a Weak Fairness Property, we need to update it to use only the fair version of the called function
+                    This will only work when the definition is a conjunction, and the Weak Fairness Property is in the top level of this conjunction:
+                    
+                    Trans_2 == /\\ ...
+                              ...
+                              /\\ WF_<<Trans_1>>>(Trans_1)
+                              
+                    Transforms into:
+                    
+                    Trans_2_Fair == /\\ ...
+                              ...
+                              /\\ WF_<<Trans_1_Fair>>>(Trans_1_Fair)
+                              
+                    Trans_2_Unfair == /\\ ...
+                              ...
+                    
+                """
+                if(isinstance(defUnfair.value, Conjunction)):
+                    print("Updating Weak Fairness Properties in Unfair definition")
+                    # defUnfair.set_value(defUnfair.value.remove_literal(WeakFairness(Alias(f'{trace[-2]}_Unfair', None), self.variables.get_variables())))
+                    for l in defUnfair.value.getLiteralsUnsafe():
+                        if isinstance(l, WeakFairness) and isinstance(l.action, Alias) and l.action.name == f'{trace[-2]}_Unfair':
+                            print(f'Removing Weak Fairness Property {l} from Unfair definition')
+                            defUnfair.value.remove_literal(l)
+                    print(f'NEW UNFAIR DEF: {defUnfair.value}')
+                    defUnfair.set_value(defUnfair.value)
+                else:
+                    print("Unfair definition is not a conjunction, cannot update Weak Fairness Properties. The resulting spec may contain false Weak Fairness Properties")
+                
                 self.update(defFair)
                 self.update(defUnfair)
                 # Recursion
