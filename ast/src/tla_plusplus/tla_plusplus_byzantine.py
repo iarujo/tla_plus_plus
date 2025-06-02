@@ -59,7 +59,7 @@ class ByzantineComparison(TLAPlusPlusTerm):
             console.print("[green]Precompiling for Byzantine Comparison Done!")
             return 
         
-        spec.precompilationSplitNextFairness(self.trace)
+        spec.precompilation_split_next_fairness(self.trace)
         
         console.print("[green]Precompiling for Byzantine Comparison Done!")
     

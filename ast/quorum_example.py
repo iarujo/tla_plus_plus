@@ -17,7 +17,7 @@ def quorum_ast():
     """ Replicate the ByzantineQuorumInfinite specification from the repo in TLA++ """
         
     name="ByzantineQuorumInfinite"
-    extends=["Integers", "FiniteSets"]  #TODO: Create a constant for Integers and FiniteSets (E.G Module Names or smth)
+    extends=["Integers", "FiniteSets"]
     
     Values = Constant("Values")
     Acceptors = Constant("Acceptors")
