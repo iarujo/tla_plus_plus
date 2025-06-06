@@ -46,7 +46,7 @@ Modeling Byzantine faults in TLA+ is notoriously complex and error-prone, requir
    ```
 
 2. **Usage:**  
-   - Write your specification AST using TLA++ syntax (see `ast/examples`).
+   - Write your specification AST using TLA++ syntax (see `ast/`).
    - Use the provided compiler functions to convert TLA++ ASTs into standard TLA+ code
      ```python
       ast().compile()
@@ -71,8 +71,8 @@ is automatically expanded by the compiler into:
   Compiler source code and AST node definitions.
 - `README.md`  
   This file.
-- `report/`  
-  Master project report, including background, design, implementation, evaluation, and future work.
+- `tla_specs/`  
+  TLA+ specifications used representing the following types of quorums: One and multiple round, with and without byzantine nodes, and with or without infinite excution.
 
 ## Evaluation
 
